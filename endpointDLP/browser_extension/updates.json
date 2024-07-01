@@ -1,0 +1,20 @@
+{
+    "addons": {
+      "microsoft.defender.browser_extension.native_message_host@microsoft.com": {
+        "updates": [
+          {
+            "version": "1.0.1.197",
+            "update_link": "https://firefoxdlp.blob.core.windows.net/packages-prod/prod-1.0.1.197.xpi"
+          },
+          {
+            "version": "1.1.0.210",
+            "update_link": "https://firefoxdlp.blob.core.windows.net/packages-prod/prod-1.1.0.210.xpi"
+          },
+          {
+            "version": "1.1.0.212",
+            "update_link": "https://github.com/microsoft/purview/raw/main/endpointDLP/browser_extension/prod-1.1.0.212.xpi"
+          }
+        ]
+      }
+    }
+  }
