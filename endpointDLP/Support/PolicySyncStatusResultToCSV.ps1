@@ -1,25 +1,12 @@
-$resultMessages = @() 
+$csvData = @()
+
 foreach ($item in $response.value) {
-    $resultMessages += $item.resultMessage
+    $messageObject = $item.resultMessage | ConvertFrom-Json
+    $csvData += [PSCustomObject]$messageObject
 }
 
-# Split the data into individual messages
-$messages = $resultMessages -split "\r\n\r\n"
+$csvData | Select-Object EventTimestamp, DeviceName, DeviceId, PolicyType, PolicyVersionHash, LastModifiedTime, Status | Export-Csv -Path "resultMessages.csv" -NoTypeInformation
 
-# Initialize an array to store the converted objects
-$psCustomObjects = @()
 
-foreach ($message in $messages) {
-    # Split each message into key-value pairs
-    $properties = $message -split "\r\n"
-    $object = [PSCustomObject]@{}
-    foreach ($property in $properties) {
-        $key, $value = $property -split ":", 2
-        $object | Add-Member -MemberType NoteProperty -Name $key.Trim() -Value $value.Trim()
-    }
-    $psCustomObjects += $object
-}
 
-# Export to CSV
-$psCustomObjects | Export-Csv -Path "resultMessages.csv" -NoTypeInformation
 
