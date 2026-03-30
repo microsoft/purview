@@ -278,7 +278,7 @@ You will be able to view/edit case. The information on case would display beneat
 ### Step 4: Run Deletion Script
 
 ![](Images/odsp-deletion-step-5.png)
-- Download the [**OneDrive & SharePoint File Deletion Tool**](https://edlptraceuploadeusstg.z20.web.core.windows.net/ODSPFileDeletionTool/ODSPFileDeletionTool.zip)
+- Download the [**OneDrive & SharePoint File Deletion Tool**](OneDrive%20%26%20SharePoint%20File%20Deletion%20Tool/)
 - Follow instructions in `ReadMe.md` in deletion tool package
 
 ---
