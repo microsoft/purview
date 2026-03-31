@@ -223,11 +223,6 @@ The script handles common errors gracefully:
 For issues or questions:
 - Check Microsoft Graph API documentation: https://learn.microsoft.com/graph/api/driveitem-delete
 - Review Azure AD app permissions: https://learn.microsoft.com/graph/permissions-reference
-
-## License
-
-This tool is provided as-is for administrative purposes. Use at your own risk.
-
 ---
 
 **Version**: 1.0  
