@@ -17,33 +17,26 @@ This tool reads a text file containing SharePoint/OneDrive document links and de
 
 ## Setting Up Azure AD Application
 
-1. Navigate to [Azure Portal](https://portal.azure.com) ? **Azure Active Directory** ? **App registrations**
+1. Navigate to [Azure Portal](https://portal.azure.com) / **Azure Active Directory** / **App registrations**
 2. Click **New registration**
 3. Provide a name (e.g., "SPO File Deletion Tool") and click **Register**
 4. Note the **Application (client) ID** and **Directory (tenant) ID**
-5. Go to **Certificates & secrets** ? **New client secret** ? Save the secret value
-6. Go to **API permissions** ? **Add a permission** ? **Microsoft Graph** ? **Application permissions**
+5. Go to **Certificates & secrets** / **New client secret** / Save the secret value
+6. Go to **API permissions** / **Add a permission** / **Microsoft Graph** / **Application permissions**
 7. Add `Files.ReadWrite.All` or `Sites.ReadWrite.All`
 8. Click **Grant admin consent**
 
 ## Input File Format
 
-The input file should be a plain text file containing SharePoint or OneDrive URLs. URLs can be separated by:
-- Commas (`,`)
-- New lines
-- Or a combination of both
+The input file should be a CSV file containing SharePoint or OneDrive URLs in a single column. Ensure the file has a header row with the column name `DocumentLink`.
 
 ### Example Input File:
 
-```
-https://contoso.sharepoint.com/sites/TeamSite/Shared Documents/Document1.docx,
+```csv
+DocumentLink
+https://contoso.sharepoint.com/sites/TeamSite/Shared Documents/Document1.docx
 https://contoso-my.sharepoint.com/personal/user_contoso_onmicrosoft_com/Documents/Report.xlsx
 https://contoso.sharepoint.com/sites/Finance/Shared Documents/Budget2026.xlsx
-```
-
-Or comma-separated on one line:
-```
-https://contoso.sharepoint.com/sites/TeamSite/Shared Documents/file1.docx, https://contoso-my.sharepoint.com/personal/user_contoso_onmicrosoft_com/Documents/file2.xlsx
 ```
 
 ### Supported URL Formats:
@@ -65,7 +58,7 @@ https://{tenant}-my.sharepoint.com/personal/{user}_{domain}_{tld}/Documents/{fil
 
 ```powershell
 .\DeleteODSPFile.ps1 `
-    -DocumentLinksFile "C:\path\to\links.txt" `
+    -DocumentLinksFile "C:\path\to\links.csv" `
     -TenantId "your-tenant-id" `
     -ClientId "your-client-id" `
     -ClientSecret "your-client-secret"
@@ -75,7 +68,7 @@ https://{tenant}-my.sharepoint.com/personal/{user}_{domain}_{tld}/Documents/{fil
 
 ```powershell
 .\DeleteODSPFile.ps1 `
-    -DocumentLinksFile "C:\Exports\FilesToDelete.txt" `
+    -DocumentLinksFile "C:\Exports\FilesToDelete.csv" `
     -TenantId "12345678-1234-1234-1234-123456789abc" `
     -ClientId "87654321-4321-4321-4321-210987654321" `
     -ClientSecret "your~secret~value~here"
@@ -84,7 +77,7 @@ https://{tenant}-my.sharepoint.com/personal/{user}_{domain}_{tld}/Documents/{fil
 ### Using Variables
 
 ```powershell
-$linksFile = "C:\Exports\FilesToDelete.txt"
+$linksFile = "C:\Exports\FilesToDelete.csv"
 $tenantId = "12345678-1234-1234-1234-123456789abc"
 $clientId = "87654321-4321-4321-4321-210987654321"
 $clientSecret = "your~secret~value~here"
@@ -99,7 +92,7 @@ $clientSecret = "your~secret~value~here"
 ## Execution Flow
 
 1. **Authentication**: Retrieves an access token from Azure AD
-2. **File Parsing**: Reads and validates document links from the text file
+2. **File Parsing**: Reads and validates document links from the CSV file
 3. **Link Validation**: Filters out non-SharePoint/OneDrive URLs and empty entries
 4. **Preview**: Displays all files to be deleted
 5. **Confirmation**: Requires typing "YES" to proceed (case-sensitive)
@@ -118,7 +111,7 @@ $clientSecret = "your~secret~value~here"
 Retrieving access token...
 ? Access token retrieved successfully!
 
-Reading document links from: C:\Exports\FilesToDelete.txt
+Reading document links from: C:\Exports\FilesToDelete.csv
 Found 48 document link(s)
 
 Document links to be deleted:
@@ -207,10 +200,10 @@ The script handles common errors gracefully:
 
 ## Best Practices
 
-1. **Test First**: Run with a small text file (1-5 URLs) to verify configuration
+1. **Test First**: Run with a small CSV file (1-5 URLs) to verify configuration
 2. **Backup**: Export file metadata before deletion
 3. **Review Logs**: Check the output CSV report after execution
-4. **Batch Size**: For large datasets (>1000 files), split into multiple text files
+4. **Batch Size**: For large datasets (>1000 files), split into multiple CSV files
 5. **Monitor**: Review Microsoft 365 audit logs for deletion events
 
 ## Files
