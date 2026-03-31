@@ -4,7 +4,7 @@ A PowerShell script for batch deletion of files from SharePoint Online and OneDr
 
 ## Overview
 
-This tool reads a text file containing SharePoint/OneDrive document links and deletes the files using Microsoft Graph API. It supports both SharePoint team sites and OneDrive personal libraries.
+This tool is specifically designed for the SRR (Subject Right Request) deletion case. It facilitates the batch deletion of files from SharePoint Online and OneDrive for Business using Microsoft Graph API. The tool supports both SharePoint and OneDrive, ensuring compliance with SRR requirements.
 
 ## Prerequisites
 
