@@ -22,6 +22,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 #>
 
+# =============================================
+# SAMPLE COMMAND
+# =============================================
+# Example usage of the script:
+# .\DeleteODSPFile.ps1 `
+#     -DocumentLinksFile "C:\path\to\links.csv" `
+#     -TenantId "your-tenant-id" `
+#     -ClientId "your-client-id" `
+#     -ClientSecret "your-client-secret"
+
+# =============================================
+
+
 param (
     [Parameter(Mandatory = $true)]
     [string]$DocumentLinksFile,
@@ -41,6 +54,9 @@ Add-Type -AssemblyName System.Web
 # =============================================
 # FUNCTION: Get Access Token
 # =============================================
+# This function retrieves an access token from Azure AD using the provided
+# Tenant ID, Client ID, and Client Secret. The token is required to authenticate
+# requests to the Microsoft Graph API.
 function Get-GraphAccessToken {
     param(
         [Parameter(Mandatory = $true)]
@@ -83,6 +99,9 @@ function Get-GraphAccessToken {
 # =============================================
 # FUNCTION: Parse document links from CSV file
 # =============================================
+# This function reads a CSV file containing document links, validates the links,
+# and extracts only SharePoint or OneDrive URLs. It ensures that the required
+# column exists and skips invalid or empty rows.
 function Get-DocumentLinksFromCsv {
     param(
         [Parameter(Mandatory = $true)]
@@ -164,6 +183,8 @@ function Get-DocumentLinksFromCsv {
 # =============================================
 # FUNCTION: Detect URL type (SharePoint or OneDrive)
 # =============================================
+# This function determines whether a given URL corresponds to a SharePoint
+# or OneDrive document based on its path structure.
 function Get-DocumentLinkType {
     param([System.Uri]$Uri)
 
@@ -183,6 +204,8 @@ function Get-DocumentLinkType {
 # =============================================
 # FUNCTION: Resolve Graph item for SharePoint URL
 # =============================================
+# This function resolves the Graph API item for a given SharePoint URL.
+# It extracts the site path and prepares the URL for further processing.
 function Resolve-SharePointItem {
     param(
         [System.Uri]$Uri,
@@ -263,6 +286,8 @@ function Resolve-SharePointItem {
 # =============================================
 # FUNCTION: Resolve Graph item for OneDrive URL
 # =============================================
+# This function resolves the Graph API item for a given OneDrive URL.
+# It extracts the user email and prepares the URL for further processing.
 function Resolve-OneDriveItem {
     param(
         [System.Uri]$Uri,
@@ -406,6 +431,9 @@ function Resolve-OneDriveItem {
 # =============================================
 # FUNCTION: Delete a single file
 # =============================================
+# This function deletes a file from SharePoint or OneDrive using the Microsoft Graph API.
+# It requires the document link and authenticate headers, and uses the appropriate
+# resolution function (Resolve-SharePointItem or Resolve-OneDriveItem) based on the link type.
 function Remove-GraphFile {
     param(
         [Parameter(Mandatory = $true)]
