@@ -253,8 +253,6 @@ You will be able to view/edit case. The information on case would display beneat
 
 ## Subject Rights Request Case Delete – OneDrive and SharePoint Using Script
 
-![](Images/odsp-deletion-step-1.png)
-
 ### Step 1: Export Files
 
 ![](Images/odsp-deletion-step-1.png)
