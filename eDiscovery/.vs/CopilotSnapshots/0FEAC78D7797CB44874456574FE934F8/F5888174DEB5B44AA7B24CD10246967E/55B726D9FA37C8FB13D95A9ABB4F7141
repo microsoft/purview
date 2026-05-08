@@ -1,10 +1,10 @@
-# SharePoint and OneDrive File Deletion Tool
+﻿# SharePoint and OneDrive File Deletion Tool
 
 A PowerShell script for batch deletion of files from SharePoint Online and OneDrive for Business using Microsoft Graph API.
 
 ## Overview
 
-This tool is specifically designed for the SRR (Subject Right Request) deletion case. It facilitates the batch deletion of files from SharePoint Online and OneDrive for Business using Microsoft Graph API. The tool supports both SharePoint team sites and OneDrive personal libraries, ensuring compliance with SRR requirements.
+This tool reads a text file containing SharePoint/OneDrive document links and deletes the files using Microsoft Graph API. It supports both SharePoint team sites and OneDrive personal libraries.
 
 ## Prerequisites
 
@@ -17,12 +17,12 @@ This tool is specifically designed for the SRR (Subject Right Request) deletion 
 
 ## Setting Up Azure AD Application
 
-1. Navigate to [Azure Portal](https://portal.azure.com) / **Azure Active Directory** / **App registrations**
+1. Navigate to [Azure Portal](https://portal.azure.com) ? **Azure Active Directory** ? **App registrations**
 2. Click **New registration**
 3. Provide a name (e.g., "SPO File Deletion Tool") and click **Register**
 4. Note the **Application (client) ID** and **Directory (tenant) ID**
-5. Go to **Certificates & secrets** / **New client secret** / Save the secret value
-6. Go to **API permissions** / **Add a permission** / **Microsoft Graph** / **Application permissions**
+5. Go to **Certificates & secrets** ? **New client secret** ? Save the secret value
+6. Go to **API permissions** ? **Add a permission** ? **Microsoft Graph** ? **Application permissions**
 7. Add `Files.ReadWrite.All` or `Sites.ReadWrite.All`
 8. Click **Grant admin consent**
 

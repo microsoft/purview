@@ -42,7 +42,15 @@ You will be able to view/edit case. The information on case would display beneat
 
 ![](Images/srr-case-creation-step-4-add-query-condition-1.png)
 - Use the condition builder
-- Enter data-subject-related identifiers
+- Enter a KQL query using the following template:
+  ```
+  (("<full name>" OR "<email>") OR (participants:"<email>"))(c:c)(date>=<one year before SRR submit date>)(-participants=<email>)
+  ```
+  **Example:**
+  ```
+  (("Charles Jackson" OR "charles@M365P893818.onmicrosoft.com") OR (participants:"charles@M365P893818.onmicrosoft.com"))(c:c)(date>=2025-02-23)(-participants=charles@M365P893818.onmicrosoft.com)
+  ```
+  > **Note:** If submitting a new request in eDiscovery, set the date to one year before today. If replicating an existing SRR request, refer to [Find Query Used by Existing SRR Case in Priva Portal](#find-query-used-by-existing-srr-case-in-priva-portal) to retrieve the exact query.
 - Run the query
 
 ### Step 5: Run Search
@@ -280,5 +288,56 @@ You will be able to view/edit case. The information on case would display beneat
 ![](Images/odsp-deletion-step-5.png)
 - Download the [**OneDrive & SharePoint File Deletion Tool**](OneDrive%20%26%20SharePoint%20File%20Deletion%20Tool/)
 - Follow instructions in `ReadMe.md` in deletion tool package
+
+---
+
+## Find Query Used by Existing SRR Case in Priva Portal
+
+This section describes how to retrieve the search query from an existing Subject Rights Request case in the Priva portal, so it can be reused in eDiscovery searches.
+
+### Step 1: Open Browser Inspector
+
+![](Images/priva-query-step-1-open-inspector-1.png)
+- Go to the [Priva SRR portal](https://purview.microsoft.com/priva/dsr)
+- Right-click anywhere on the page and select **Inspect**
+
+### Step 2: Set Up Network Filter
+
+![](Images/priva-query-step-2-filter-network-tab-1.png)
+- In the Inspector, switch to the **Network** tab
+- Enter **privacycases** in the network filter field
+- Refresh the page
+
+### Step 3: Switch to Priva SRR View
+
+![](Images/priva-query-step-3-toggle-srr-1.png)
+- Switch the toggle back to use **Subject Rights Request in Microsoft Priva**
+- Once the page is loaded, a new API record will appear under the Network list
+
+### Step 4: Find the Filter Query
+
+![](Images/priva-query-step-4-find-filter-query-1.png)
+- Click the API record, then select the **Response** tab
+- Press **Ctrl+F** to search for your case name
+- Once you find the payload section for your case, scroll down to find the `filterQuery` field
+- Copy the query
+
+### Step 5: Clean Up and Use the Query
+
+- Remove the extra `\` characters from the copied query before using it in eDiscovery search
+
+**Example:**
+
+Query copied from payload:
+```
+(("Charles Jackson" OR "Charles@M365P893818.onmicrosoft.com") OR (participants:"Charles@M365P893818.onmicrosoft.com"))(c:c)(-participants=Charles@M365P893818.onmicrosoft.com)
+```
+
+Query after removing `\`:
+```
+(("Charles Jackson" OR "Charles@M365P893818.onmicrosoft.com") OR (participants:"Charles@M365P893818.onmicrosoft.com"))(c:c)(-participants=Charles@M365P893818.onmicrosoft.com)
+```
+
+- Use the cleaned query in your eDiscovery search
 
 ---

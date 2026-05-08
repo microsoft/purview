@@ -1,4 +1,4 @@
-<#   
+﻿<#   
 The MIT License (MIT)
 
 Copyright (c) 2015 Microsoft Corporation
@@ -21,19 +21,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 #>
-
-# =============================================
-# SAMPLE COMMAND
-# =============================================
-# Example usage of the script:
-# .\DeleteODSPFile.ps1 `
-#     -DocumentLinksFile "C:\path\to\links.csv" `
-#     -TenantId "your-tenant-id" `
-#     -ClientId "your-client-id" `
-#     -ClientSecret "your-client-secret"
-
-# =============================================
-
 
 param (
     [Parameter(Mandatory = $true)]

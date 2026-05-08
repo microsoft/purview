@@ -1,4 +1,4 @@
-# SharePoint and OneDrive File Deletion Tool
+﻿# SharePoint and OneDrive File Deletion Tool
 
 A PowerShell script for batch deletion of files from SharePoint Online and OneDrive for Business using Microsoft Graph API.
 
