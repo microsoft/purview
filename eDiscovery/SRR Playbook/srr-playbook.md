@@ -328,7 +328,7 @@ This section describes how to retrieve the search query from an existing Subject
 
 Query copied from payload:
 ```
-(("Charles Jackson" OR "Charles@M365P893818.onmicrosoft.com") OR (participants:"Charles@M365P893818.onmicrosoft.com"))(c:c)(-participants=Charles@M365P893818.onmicrosoft.com)
+((\"Charles Jackson\" OR \"Charles@M365P893818.onmicrosoft.com\") OR (participants:\"Charles@M365P893818.onmicrosoft.com\"))(c:c)(-participants=Charles@M365P893818.onmicrosoft.com)
 ```
 
 Query after removing `\`:
