@@ -49,6 +49,9 @@ param (
     [string]$ClientSecret
 )
 
+# Strip surrounding double quotes from DocumentLinksFile if present
+$DocumentLinksFile = $DocumentLinksFile.Trim('"')
+
 Add-Type -AssemblyName System.Web
 
 # =============================================
@@ -468,9 +471,9 @@ function Remove-GraphFile {
         throw "Could not retrieve required item properties."
     }
 
-    # Delete via Graph API
-    $deleteUri = "https://graph.microsoft.com/v1.0/drives/$driveId/items/$itemId"
-    Invoke-RestMethod -Method DELETE -Uri $deleteUri -Headers $Headers
+    # Permanently delete via Graph API (bypasses Recycle Bin)
+    $deleteUri = "https://graph.microsoft.com/v1.0/drives/$driveId/items/$itemId/permanentDelete"
+    Invoke-RestMethod -Method POST -Uri $deleteUri -Headers $Headers
 
     return $fileName
 }
@@ -516,7 +519,10 @@ foreach ($item in $documentItems) {
 Write-Host ""
 
 # Confirm batch deletion
-$confirmation = Read-Host "Are you sure you want to delete ALL $($documentItems.Count) file(s)? (YES to confirm)"
+Write-Host "⚠️  WARNING: Files will be PERMANENTLY DELETED and CANNOT be recovered!" -ForegroundColor Red
+Write-Host "⚠️  This operation bypasses the Recycle Bin." -ForegroundColor Red
+Write-Host ""
+$confirmation = Read-Host "Are you sure you want to PERMANENTLY delete ALL $($documentItems.Count) file(s)? (YES to confirm)"
 if ($confirmation -ne "YES") {
     Write-Host "Batch deletion cancelled." -ForegroundColor Yellow
     exit 0
