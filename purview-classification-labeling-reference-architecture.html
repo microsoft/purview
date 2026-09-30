@@ -1,0 +1,2198 @@
+<!DOCTYPE html>
+<html lang="en-US" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Microsoft Purview — Classification &amp; Labeling Interactive Reference Architecture</title>
+<!--
+  =====================================================================================
+  Microsoft Purview — Classification & Labeling Reference Architecture (self-contained)
+  =====================================================================================
+  ONE portable HTML file. No external CSS/JS/fonts/images. Inline SVG only. Opens from
+  disk. The ENTIRE diagram is generated from the single ARCHITECTURE object near the top
+  of the page script — layout (x/y of every node, every connector, every band) is
+  COMPUTED, never hard-coded. To add / reword a node you edit ARCHITECTURE only; the
+  layout engine repositions everything. See the "HOW TO ADD A NODE" comment in the script.
+  =====================================================================================
+-->
+<style>
+  /* ---------------------------------------------------------------------------
+     THEME TOKENS
+     Light is the default. A prefers-color-scheme:dark media query supplies dark
+     for dark-OS viewers (and satisfies off-preview theming). A manual toggle sets
+     data-theme="light|dark" on <html>, which wins over the OS preference.
+     Colour is meaning ONLY: neutral grey=content object, blue rail=Purview service,
+     amber top=control/inspection, red rail=enforcement, green outline=final
+     destination. The single vivid accent (#0F6CBD) is reserved for selection /
+     active flow / focus.
+     --------------------------------------------------------------------------- */
+  :root {
+    color-scheme: light dark;
+    --canvas:#FFFFFF;
+    --surface:#FFFFFF;
+    --surface-2:#FAF9F8;
+    --fg:#242424;
+    --muted:#616161;
+    --hairline:#E1DFDD;
+    --accent:#0F6CBD;              /* selection / active flow / focus ONLY */
+    --accent-soft:rgba(15,108,189,.10);
+    --edge:#8A8886;                /* neutral connector */
+    --rail-content:#8A8886;        /* neutral grey  = content object      */
+    --rail-service:#37618E;        /* muted blue    = Purview service     */
+    --edge-control:#B58A00;        /* amber         = control/inspection  */
+    --rail-enforce:#B10E1C;        /* red           = enforcement         */
+    --outline-dest:#0E700E;        /* green         = final destination   */
+    --priv:#C50F1F;                /* private preview red                 */
+    --badge-bg:#F0F0F0;
+    --badge-fg:#424242;
+    --dim:0.18;
+    /* Stage identity hues. Tints are ~4% in light / ~9% in dark: enough to separate the
+       five columns, never enough to compete with the blue selection accent. */
+    --hue-1:#8A8886; --wash-1:rgba(138,136,134,.045);
+    --hue-2:#0F7B7B; --wash-2:rgba(15,123,123,.050);
+    --hue-3:#5B5FC7; --wash-3:rgba(91,95,199,.050);
+    --hue-4:#B58A00; --wash-4:rgba(181,138,0,.055);
+    --hue-5:#0E700E; --wash-5:rgba(14,112,14,.045);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --canvas:#1B1A19;
+      --surface:#262523;
+      --surface-2:#201F1E;
+      --fg:#F3F2F1;
+      --muted:#A19F9D;
+      --hairline:#3B3A39;
+      --accent:#479EF5;
+      --accent-soft:rgba(71,158,245,.16);
+      --edge:#7A7876;
+      --rail-content:#8A8886;
+      --rail-service:#7FA6D6;
+      --edge-control:#E0C24A;
+      --rail-enforce:#E86A72;
+      --outline-dest:#6BB86B;
+      --priv:#F1707B;
+      --badge-bg:#3B3A39;
+      --badge-fg:#D6D4D2;
+      --hue-1:#A19F9D; --wash-1:rgba(161,159,157,.085);
+      --hue-2:#4FC4C4; --wash-2:rgba(79,196,196,.090);
+      --hue-3:#9BA0F0; --wash-3:rgba(155,160,240,.090);
+      --hue-4:#E0C24A; --wash-4:rgba(224,194,74,.085);
+      --hue-5:#6BB86B; --wash-5:rgba(107,184,107,.085);
+    }
+  }
+  /* Manual dark toggle (wins over OS preference) */
+  :root[data-theme="dark"] {
+    --canvas:#1B1A19; --surface:#262523; --surface-2:#201F1E; --fg:#F3F2F1;
+    --muted:#A19F9D; --hairline:#3B3A39; --accent:#479EF5; --accent-soft:rgba(71,158,245,.16);
+    --edge:#7A7876; --rail-content:#8A8886; --rail-service:#7FA6D6; --edge-control:#E0C24A;
+    --rail-enforce:#E86A72; --outline-dest:#6BB86B; --priv:#F1707B; --badge-bg:#3B3A39; --badge-fg:#D6D4D2;
+    --hue-1:#A19F9D; --wash-1:rgba(161,159,157,.085);
+    --hue-2:#4FC4C4; --wash-2:rgba(79,196,196,.090);
+    --hue-3:#9BA0F0; --wash-3:rgba(155,160,240,.090);
+    --hue-4:#E0C24A; --wash-4:rgba(224,194,74,.085);
+    --hue-5:#6BB86B; --wash-5:rgba(107,184,107,.085);
+  }
+
+  * { box-sizing:border-box; }
+  html, body { margin:0; padding:0; }
+  body {
+    background:var(--canvas);
+    color:var(--fg);
+    font-family:"Segoe UI Variable","Aptos","Segoe UI",system-ui,sans-serif;
+    font-size:14px;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- Header ---------- */
+  header.appbar {
+    padding:24px 32px 16px;
+    border-block-end:1px solid var(--hairline);
+    background:var(--surface);
+    display:grid; grid-template-columns:1fr auto; column-gap:24px; align-items:baseline;
+  }
+  .appbar h1 { font-size:20px; font-weight:600; margin:0; letter-spacing:-.01em; }
+  /* Timestamp sits top-right, aligned to the title baseline. Filled at load so the
+     date reflects when the file was last opened/exported, not when it was authored. */
+  .appbar .stamp { grid-column:2; text-align:end; font-size:11px;
+                   color:var(--muted); line-height:1.5; white-space:nowrap; }
+  .appbar .stamp .stamp-label { display:block; text-transform:uppercase; letter-spacing:.06em; font-size:10px; }
+  .appbar .refline { font-size:11px; color:var(--muted); margin-top:8px; }
+  .appbar .refline a { color:var(--accent); text-decoration:none; }
+  .appbar .refline a:hover { text-decoration:underline; }
+
+  /* ---------- Controls row ---------- */
+  /* ---------------------------------------------------------------------------
+     TOOLBAR — single row at any width.
+     Three mechanisms, applied in order of least damage:
+       1. Type and padding shrink smoothly with the viewport (clamp).
+       2. Below 1500px the "Explain" / "Isolate layer" group labels drop out.
+       3. Below 1300px every button swaps to a shorter label (.t-full/.t-min).
+     Horizontal scroll is the last-resort safety net below ~900px so the bar can
+     never wrap or clip a control.
+     To revert: restore flex-wrap:wrap, delete the clamp() values, the .t-full/
+     .t-min rules and the two media queries below.
+     --------------------------------------------------------------------------- */
+  .controls {
+    display:flex; flex-wrap:nowrap; align-items:center;
+    gap:clamp(4px, 0.55vw, 8px);
+    padding:12px clamp(12px, 2.2vw, 32px);
+    border-block-end:1px solid var(--hairline);
+    background:var(--surface); position:relative;
+    overflow-x:auto; scrollbar-width:thin;
+  }
+  .controls .spacer { flex:1 1 auto; min-width:4px; }
+  .btn {
+    font:inherit; font-size:clamp(10.5px, 0.85vw, 12px); color:var(--fg);
+    background:var(--surface); border:1px solid var(--hairline);
+    border-radius:8px; padding:6px clamp(7px, 0.9vw, 12px); cursor:pointer;
+    display:inline-flex; align-items:center; gap:6px; white-space:nowrap; flex:0 0 auto;
+  }
+  /* Label swapping: the short label is hidden until the narrow breakpoint. */
+  .btn .t-min, .t-min { display:none; }
+  @media (max-width:1500px){
+    .controls .group-label { display:none; }
+  }
+  @media (max-width:1300px){
+    .btn .t-full { display:none; }
+    .btn .t-min  { display:inline; }
+  }
+  .btn:hover { background:var(--surface-2); }
+  .btn:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .btn[aria-pressed="true"] { border-color:var(--accent); color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset; }
+  .btn.explain { border-style:dashed; }
+  .group-label { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-inline-end:2px; }
+  select.layer-select {
+    font:inherit; font-size:12px; color:var(--fg); background:var(--surface);
+    border:1px solid var(--hairline); border-radius:8px; padding:6px 10px; cursor:pointer;
+  }
+  select.layer-select:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  /* ---------- Legend ---------- */
+  .legend {
+    display:none; gap:28px; flex-wrap:wrap;
+    padding:14px 32px; border-block-end:1px solid var(--hairline);
+    background:var(--surface-2); font-size:12px;
+  }
+  .legend.open { display:flex; }
+  .legend section { min-width:200px; }
+  .legend h3 { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 8px; }
+  .legend .row { display:flex; align-items:center; gap:8px; margin:5px 0; }
+  .swatch { width:26px; height:16px; border-radius:4px; border:1px solid var(--hairline); background:var(--surface); flex:none; }
+  .swatch.content { border-inline-start:3px solid var(--rail-content); }
+  .swatch.service { border-inline-start:3px solid var(--rail-service); }
+  .swatch.control { border-block-start:2px solid var(--edge-control); }
+  .swatch.enforce { border-inline-start:3px solid var(--rail-enforce); }
+  .swatch.dest    { border:1.5px solid var(--outline-dest); }
+  .swatch.priv    { border:1.5px dashed var(--priv); }
+  .legend .edge-demo { width:34px; height:0; border-block-start:1.5px solid var(--edge); flex:none; }
+  .legend .edge-demo.dashed { border-block-start-style:dashed; }
+  .legend .edge-demo.dotted { border-block-start-style:dotted; }
+  .legend .edge-demo.nonga { border-block-start:1.5px dashed var(--edge); width:40px; }
+  .legend .note { color:var(--priv); font-weight:600; }
+
+  /* ---------- Canvas ---------- */
+  .canvas-scroll { overflow-x:auto; overflow-y:hidden; background:var(--canvas); padding:0; }
+  /* ---------------------------------------------------------------------------
+     OPTION A — FIT TO WIDTH.
+     In fit mode the <svg> is given width:100% and its viewBox does the scaling,
+     so the whole architecture is visible at once. Text scales with it, so this is
+     an ORIENTATION mode, not a reading mode — at ~1280px the node titles render
+     around 8px. The toolbar toggle returns to 100% for reading.
+     To revert this feature entirely: delete this CSS block, the #btn-fit button,
+     applyFitMode()/updateFitButton(), and the FIT_KEY lines in boot().
+     --------------------------------------------------------------------------- */
+  body.fit .canvas-scroll { overflow-x:hidden; }
+  body.fit svg.diagram { width:100%; height:auto; }
+  svg.diagram { display:block; }
+  svg.diagram text { font-family:inherit; }
+
+  .stage-label { font-size:13px; text-transform:uppercase; letter-spacing:.08em; fill:var(--muted); font-weight:600; }
+  /* The question each stage answers, plus a plain-language line of what happens there.
+     Together these carry the 10-second read inside the diagram itself. */
+  .stage-q { font-size:11px; fill:var(--muted); font-style:italic; }
+  .stage-d { font-size:11px; fill:var(--muted); }
+  .stage-rule { stroke:var(--hairline); stroke-width:1; }
+  /* Stage identity: a light wash + a 3px top rule per stage. Nodes stay neutral, and
+     the Microsoft blue accent remains reserved for selection / active flow / focus. */
+  .stage-wash { stroke:none; }
+  .stage-cap  { stroke-width:3; stroke-linecap:butt; }
+  .st-1 .stage-wash { fill:var(--wash-1); } .st-1 .stage-cap { stroke:var(--hue-1); }
+  .st-2 .stage-wash { fill:var(--wash-2); } .st-2 .stage-cap { stroke:var(--hue-2); }
+  .st-3 .stage-wash { fill:var(--wash-3); } .st-3 .stage-cap { stroke:var(--hue-3); }
+  .st-4 .stage-wash { fill:var(--wash-4); } .st-4 .stage-cap { stroke:var(--hue-4); }
+  .st-5 .stage-wash { fill:var(--wash-5); } .st-5 .stage-cap { stroke:var(--hue-5); }
+  .group-box { fill:var(--surface-2); stroke:var(--hairline); stroke-width:1; stroke-dasharray:3 3; rx:8; }
+  .group-title { font-size:11px; text-transform:uppercase; letter-spacing:.06em; fill:var(--muted); font-weight:600; }
+
+  /* Node card (lives inside <foreignObject>) */
+  .node {
+    width:100%;
+    background:var(--surface);
+    border:1px solid var(--hairline);
+    border-radius:8px;
+    padding:10px 12px;
+    cursor:pointer;
+    transition:box-shadow .12s ease, transform .12s ease, opacity .12s ease;
+  }
+  .node:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .node .node-title { font-size:14px; font-weight:600; line-height:1.25; }
+  .node .node-meta  { font-size:11px; color:var(--muted); margin-top:3px; }
+  .node ul.node-bul { margin:6px 0 0; padding-inline-start:16px; }
+  .node ul.node-bul li { font-size:11px; color:var(--muted); margin:2px 0; }
+  /* Scope caveat — an italic aside stating what a node does NOT represent, so a reader
+     doesn't mistake the diagram's slice for the whole capability. */
+  .node .node-caveat { margin-top:7px; font-size:10.5px; font-style:italic; color:var(--muted); line-height:1.45; }
+  body.overview .node .node-caveat { display:none; }
+  /* align-items:flex-start is load-bearing. A column flex container stretches its
+     items to full width by default, which made each link's CLICK TARGET span the whole
+     card — so clicking empty space at the bottom of a box opened a link. Shrinking each
+     anchor to its own text keeps the hit area on the words only. */
+  .node .node-links { margin-top:7px; display:flex; flex-direction:column; gap:2px; align-items:flex-start; }
+  .node .node-links a { font-size:11px; color:var(--accent); text-decoration:none; word-break:break-word;
+                        width:fit-content; max-width:100%; }
+  .node .node-links a:hover { text-decoration:underline; }
+  .node .node-links .tbd { font-size:11px; color:var(--muted); font-style:italic; }
+  .node .badges { margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; }
+
+  /* Category visual language */
+  /* Category is carried by SHAPE and WEIGHT as well as colour, so the diagram still
+     reads in greyscale, in print, and for colour-vision deficiency. */
+  .node.cat-content     { border-inline-start:3px solid var(--rail-content); background:var(--surface-2); }
+  .node.cat-service     { border-inline-start:3px solid var(--rail-service); }
+  /* Control / inspection point: SOLID amber top edge + a notched top-left corner.
+     Solid deliberately — in this diagram a dashed line means "not yet GA", and these
+     controls are generally available. Shape carries the category; dash carries status. */
+  .node.cat-control     { border-block-start:2px solid var(--edge-control);
+                          clip-path:polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px); }
+  /* Enforcement: heaviest left rail in the diagram — pressure you can feel at a glance. */
+  .node.cat-enforce     { border-inline-start:5px solid var(--rail-enforce); }
+  .node.cat-dest        { border:1.5px solid var(--outline-dest); }
+  .node.cat-note        { border:1px dashed var(--hairline); background:var(--surface-2); cursor:pointer; }
+  /* Licence tag — a small neutral pill, never coloured. Licensing is a fact about the
+     capability, not a status, so it must not compete with the preview/roadmap badges. */
+  .node .lic { display:inline-block; font-size:10px; font-weight:600; letter-spacing:.04em;
+               padding:1px 6px; border-radius:4px; border:1px solid var(--hairline);
+               color:var(--muted); background:var(--surface-2); margin-inline-end:5px; }
+  .node .lic-row { margin-top:6px; }
+  body.overview .node .lic-row { display:none; }
+  .legend .lic { display:inline-block; font-size:10px; font-weight:600; padding:1px 6px;
+                 border-radius:4px; border:1px solid var(--hairline); color:var(--muted);
+                 background:var(--surface-2); }
+  .node.cat-note .node-title { color:var(--muted); }
+  .node.cat-note .note-body { font-size:11px; color:var(--fg); margin-top:5px; line-height:1.5; }
+
+  /* Status badges */
+  .badge { font-size:10px; letter-spacing:.03em; padding:2px 7px; border-radius:999px; border:1px solid transparent; white-space:nowrap; }
+  .badge.st-ga      { background:var(--badge-bg); color:var(--badge-fg); }
+  .badge.st-pp      { background:transparent; color:var(--accent); border-color:var(--accent); }
+  .badge.st-pr      { background:transparent; color:var(--muted); border:1px dotted var(--muted); font-style:italic; }
+  .badge.st-priv    { background:transparent; color:var(--priv); border:1px dashed var(--priv); font-weight:600; }
+  .badge.st-unknown { background:transparent; color:var(--muted); font-style:italic; border-color:var(--hairline); }
+
+  /* Private-preview whole-node treatment (currently 0 nodes; kept fully wired) */
+  /* Not yet GA: the coloured left rail becomes DASHED, so "this isn't generally
+     available" is legible from the node's own edge — matching the dashed connectors
+     that carry the same meaning. Applies to the category rails set above. */
+  .node[data-status="public-preview"],
+  .node[data-status="public-roadmap"] { border-inline-start-style:dashed; }
+  /* cat-note has no coloured rail of its own — give it a dashed neutral one so the
+     "not yet GA" cue is never lost (the unified classification node relies on this). */
+  .node.cat-note[data-status="public-preview"],
+  .node.cat-note[data-status="public-roadmap"] {
+    border-inline-start:3px dashed var(--rail-content); }
+
+  .node[data-status="private-preview"] { border:1.5px dashed var(--priv); }
+  .node[data-status="private-preview"] .node-title { color:var(--priv); }
+
+  /* Conditional private-preview callout. The .priv-callout class — and therefore
+     ALL of the box's border, padding, and margin — is added by JS only when at
+     least one node carries status "private-preview". With zero such nodes the
+     container stays empty and unclassed: no border, no padding, no leftover margin. */
+  /* Scope note — states what this diagram deliberately does NOT cover, so the
+     absence of a workload reads as a boundary rather than an omission. */
+  .scope-note { margin:20px 32px 8px; border:1px solid var(--hairline); border-radius:8px;
+                padding:14px 16px; background:var(--surface-2); }
+  .scope-note h2 { font-size:12px; font-weight:600; margin:0 0 6px; text-transform:uppercase;
+                   letter-spacing:.06em; color:var(--muted); }
+  .scope-note p { margin:0 0 8px; font-size:12.5px; color:var(--fg); }
+  .scope-note ul { margin:0; padding-inline-start:20px; }
+  .scope-note li { font-size:12.5px; color:var(--fg); margin:3px 0; }
+
+  .priv-callout { margin:20px 32px 28px; border:1.5px dashed var(--priv); border-radius:8px;
+                  padding:14px 16px; color:var(--priv); }
+  .priv-callout h2 { font-size:14px; font-weight:600; margin:0 0 8px; }
+  .priv-callout ul { margin:0; padding-inline-start:20px; }
+  .priv-callout li { font-size:12.5px; margin:3px 0; }
+
+  /* Selection + dimming states (applied to node <g> and edge <path>) */
+  .n-group, .edge { transition:opacity .12s ease; }
+  .dim { opacity:var(--dim); }
+  .node.selected { box-shadow:0 0 0 2px var(--accent); transform:translateY(-2px); }
+
+  /* Edges */
+  .edge { fill:none; stroke:var(--edge); stroke-width:1.5; }
+  .edge.dashed { stroke-dasharray:6 4; }
+  .edge.dotted { stroke-dasharray:1.5 4; }
+  /* Any connector touching a preview or roadmap capability. Deliberately a longer,
+     sparser dash than the on-demand (6 4) and telemetry (1.5 4) patterns so the
+     three meanings stay distinguishable. Wins over the others when combined. */
+  .edge.nonga, .edge.nonga.dashed, .edge.nonga.dotted { stroke-dasharray:14 6; }
+  .edge.active { stroke:var(--accent); stroke-width:2; }
+
+
+
+  /* ---------- Detail panel (FIXED height, no layout jump) ---------- */
+  .detail {
+    /* Fixed height => no layout jump when selection changes. Slightly taller now that
+       the panel also carries relationship chips; still scrolls internally. */
+    height:268px; overflow:auto;
+    border-block-start:1px solid var(--hairline);
+    background:var(--surface); padding:16px 32px;
+  }
+  .detail .detail-head { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+  .detail .detail-title { font-size:15px; font-weight:600; }
+  .detail .detail-kicker { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+  .detail .grid { display:grid; grid-template-columns:repeat(4, minmax(180px,1fr)); gap:18px; }
+  .detail .grid.grid-3 { grid-template-columns:repeat(3, minmax(200px,1fr)); }
+  .detail .availability { margin:12px 0 0; font-size:11.5px; color:var(--muted); }
+  .detail .grid section h4 { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 5px; }
+  .detail .grid section p { margin:0; font-size:12.5px; color:var(--fg); }
+  .detail .detail-links { margin-top:12px; font-size:12px; }
+  .detail .detail-links { display:flex; flex-wrap:wrap; gap:4px 14px; align-items:flex-start; }
+  .detail .detail-links a { color:var(--accent); text-decoration:none; width:fit-content; }
+  .detail .detail-links a:hover { text-decoration:underline; }
+  @media (max-width:900px){ .detail .grid { grid-template-columns:1fr 1fr; } }
+
+
+  /* Progressive disclosure. "Overview only" means EVERY node shows its title and badge
+     and nothing else — no sub-text, no bullets, no links, on primary and secondary nodes
+     alike. Applying it uniformly is the point: a half-stripped canvas reads as broken
+     rather than as a deliberate density setting. "Show all detail" restores everything. */
+  body.overview .node .node-meta,
+  body.overview .node .node-bul,
+  body.overview .node .node-links,
+  body.overview .node .note-body { display:none; }
+
+  /* Relationship chips in the detail panel — relationships shown, not described. */
+  .rel { margin-block-start:12px; display:flex; flex-wrap:wrap; gap:14px; align-items:flex-start; }
+  .rel .rel-group { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  .rel .rel-label { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-inline-end:2px; }
+  .chip { font-size:11.5px; padding:3px 9px; border:1px solid var(--hairline); border-radius:999px;
+          background:var(--surface-2); color:var(--fg); cursor:pointer; }
+  .chip:hover { border-color:var(--accent); color:var(--accent); }
+  .chip.static { cursor:default; }
+  .chip.none { color:var(--muted); font-style:italic; background:none; }
+
+
+  @media print {
+    :root { --canvas:#fff; --surface:#fff; --fg:#000; --muted:#555; --hairline:#999; }
+    .controls, .legend, .detail { display:none !important; }
+    .canvas-scroll { overflow:visible; }
+    /* Always print the whole diagram scaled to the page, whatever the screen mode. */
+    svg.diagram { width:100% !important; height:auto !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <h1>Microsoft Purview — Classification &amp; Labeling Interactive Reference Architecture</h1>
+  <div class="stamp"><span class="stamp-label"></span><span id="stamp-date">—</span></div>
+</header>
+
+
+
+<div class="controls" role="toolbar" aria-label="Diagram controls">
+  <button class="btn" id="btn-overview" type="button"><span class="t-full">Full overview</span><span class="t-min">Overview</span></button>
+  <button class="btn" id="btn-reset" type="button"><span class="t-full">Reset selection</span><span class="t-min">Reset</span></button>
+  <button class="btn" id="btn-theme" type="button" aria-pressed="false"><span class="t-full">Light / Dark</span><span class="t-min">Theme</span></button>
+  <button class="btn" id="btn-legend" type="button" aria-pressed="false">Legend</button>
+  <button class="btn" id="btn-density" type="button" aria-pressed="true"><span class="t-full">Overview only</span><span class="t-min">Overview</span></button>
+  <button class="btn" id="btn-fit" type="button" aria-pressed="false" title="Scale the whole diagram to the window"><span class="t-full">Fit to width</span><span class="t-min">Fit</span></button>
+  <span class="spacer"></span>
+  <span class="group-label">Explain</span>
+  <button class="btn explain" id="explain-1" type="button" title="Explain: classification vs labels"><span class="t-full">Classification vs labels</span><span class="t-min">Class. vs labels</span></button>
+  <button class="btn explain" id="explain-2" type="button" title="Explain: when is it classified?"><span class="t-full">When is it classified?</span><span class="t-min">When classified?</span></button>
+  <button class="btn explain" id="explain-3" type="button" title="Explain: how is it protected?"><span class="t-full">How is it protected?</span><span class="t-min">How protected?</span></button>
+  <span class="group-label" style="margin-inline-start:6px;">Isolate layer</span>
+  <select class="layer-select" id="layer-select" aria-label="Isolate a control layer">
+    <option value="">All layers</option>
+  </select>
+  <span class="group-label" style="margin-inline-start:6px;">Licensing</span>
+  <select class="layer-select" id="license-select" aria-label="Isolate controls by licence">
+    <option value="">All licences</option>
+  </select>
+</div>
+
+<div class="legend" id="legend" aria-label="Legend"></div>
+
+<div class="canvas-scroll" id="canvas-scroll">
+  <!-- The <svg> is generated by the layout engine below. -->
+</div>
+
+<!-- Hidden measuring container: node cards are rendered here first to read their
+     natural heights at the fixed node width, so stacking is computed, not guessed. -->
+<div id="measure" style="position:absolute; left:-99999px; top:0; width:260px; visibility:hidden;"></div>
+
+
+
+<section class="detail" id="detail" aria-live="polite">
+  <!-- Detail panel content is injected. Fixed height => no layout jump. -->
+</section>
+
+<section class="scope-note" id="scope-note" aria-label="Scope of this diagram"></section>
+
+<!-- Conditional private-preview callout. Populated AND styled by JS only when
+     ARCHITECTURE has >=1 node with status "private-preview"; otherwise it stays
+     an empty, unstyled container that renders nothing. -->
+<div id="priv-callout"></div>
+
+
+
+<script>
+/* ============================================================================
+   HOW TO ADD OR EDIT A NODE (for a non-developer PM)
+   ----------------------------------------------------------------------------
+   1. Everything you see is built from the ARCHITECTURE object below.
+   2. To add a node, copy an existing entry in ARCHITECTURE.nodes and change:
+        id      : a short unique lowercase-with-dashes name (also becomes the SVG id)
+        stage   : 1..5  (User input / Classified / Labeling / Protection / Insights)
+        col     : sub-column within the stage (0 by default; classifiers use 1)
+        cat     : visual role -> 'content' | 'service' | 'control' | 'enforce' | 'dest' | 'note'
+        title   : the bold node title (use "labeling", single L)
+        meta    : one short line under the title (optional)
+        bullets : array of short strings (optional)
+        status  : 'ga' | 'public-preview' | 'public-roadmap' | 'private-preview' | 'unknown' | 'na'
+        links   : array of { text, href } (href omitted => shown as a plain TBD placeholder)
+        detail  : { sees, can, limits, status }  <- NEVER leave a field blank; write "None documented" or "UNKNOWN"
+   3. To draw a connector, add to ARCHITECTURE.edges:
+        { from:'<id-or-group-id>', to:'<id-or-group-id>', kind:'solid'|'dashed'|'dotted', flow?:'classification'|'label' }
+      - solid  = automatic / in-transit    - dashed = on-demand / at rest    - dotted = signal / telemetry
+   4. Nothing else needs changing — positions and the whole layout recompute automatically.
+   5. A node with status 'private-preview' automatically renders red + dashed + ⚠ in the
+      diagram AND is listed in the red "remove before external sharing" callout box at the
+      end of the page. With zero such nodes (the case today) that box renders nothing at all.
+   ============================================================================ */
+
+/* ============================================================================
+   COPY — all reader-facing text that is NOT attached to a node.
+   Node text lives in ARCHITECTURE; everything else lives here. Two places to
+   review before a customer release, and no product wording inside functions.
+   ============================================================================ */
+const COPY = {
+
+  /* Scope note rendered beneath the diagram. */
+  scope: {
+    heading: "Scope",
+    lead: "This reference architecture describes Microsoft\u00a0365 workloads only — SharePoint, OneDrive, Exchange, Teams, Microsoft\u00a0365 Copilot, and onboarded Windows and macOS endpoints. It is <strong>not</strong> indicative of behaviour outside Microsoft\u00a0365, where capabilities, prerequisites and coverage differ:",
+    items: [
+      "Network file shares and on-premises SharePoint, scanned via the Microsoft Purview Information Protection scanner",
+      "Non-Microsoft\u00a0365 cloud apps, including those reached through Microsoft Defender for Cloud Apps",
+      "Third-party and multicloud data sources connected through Microsoft Purview Data Map"
+    ]
+  },
+
+  /* Legend. Category rows; connector rows are generated from EDGE_KINDS. */
+  legend: {
+    categoryHeading: "Node meaning (colour = meaning only)",
+    categories: [
+      { cls:"content", text:"Content object" },
+      { cls:"service", text:"Purview service / processing" },
+      { cls:"control", text:"Control / inspection point" },
+      { cls:"enforce", text:"Enforcement" },
+      { cls:"dest",    text:"Final destination" }
+    ],
+    connectorHeading: "Connectors",
+    accentNote: "Blue = selected / active flow / focus",
+    nonGaNote: "Involves a preview or roadmap capability",
+    statusHeading: "Status",
+    gaNote: "Unbadged = generally available (GA)",
+    licHeading: "Licensing",
+    licRows: [
+      { tag:"E3", text:"Included in Microsoft 365 E3 (and above)" },
+      { tag:"E5", text:"Requires E5 / E5 Compliance / equivalent add-on" },
+      { tag:"PAYG", text:"Pay-as-you-go billing, not license-inclusive" },
+      { tag:"Copilot", text:"Additionally requires a Microsoft 365 Copilot license" }
+    ],
+    licNote: "On a content object the tag is the tier at which Purview covers that workload; on a capability it is the tier that capability requires. Indicative only — confirm against the Microsoft Purview service description.",
+    dashNote: "Dashed box edge & connector = not yet generally available"
+  },
+
+  /* Detail panel section headings. */
+  detailHeadings: {
+    sees: "What it sees",
+    can: "What it can do",
+    limits: "What it can't do"
+  },
+  detailFallback: { unknown:"UNKNOWN", none:"None documented" },
+
+  /* Relationship chip labels. */
+  relations: { from:"Feeds from", into:"Feeds into", applies:"Applies to", none:"none" },
+
+  /* Empty state shown before anything is selected. */
+  emptyState: {
+    kicker: "Detail",
+    title: "Select a node, control, or layer",
+    sees: "Click any node to highlight its full upstream and downstream path; everything unrelated dims. The detail panel then shows what it feeds from, what it feeds into, and which content objects it applies to.",
+    can: "Use the Explain buttons for guided walkthroughs, or \u201cIsolate layer\u201d to see every object a control layer touches.",
+    limits: "Tab moves between nodes, Enter selects, Esc resets. Every node and its one-line description is visible from the start; \u201cOverview only\u201d strips back to titles for a cleaner read."
+  },
+
+  /* Control-layer isolation panel. {layer} and {objects} are substituted. */
+  layerIsolate: {
+    kicker: "Control layer",
+    sees: "The \u201c{layer}\u201d layer as it cuts across content objects.",
+    can: "Applies to: {objects}.",
+    limits: "Objects NOT touched by this layer are dimmed — the asymmetry is intentional (e.g. Teams messages have no per-message label; a prompt is not a labeled object).",
+    implementedBy: "Implemented by: {nodes}."
+  },
+
+  /* Licensing isolation panel. {lens}/{count}/{total}/{nodes} are substituted. */
+  licenseIsolate: {
+    kicker: "Licensing lens",
+    sees: "{lens} \u2014 {count} of {total} licensable controls in this architecture.",
+    can: "Controls in this lens: {nodes}.",
+    limits: "Licensing is a per-user entitlement, not a per-object one: content objects in Stage 1 aren\u2019t licensable items, so they stay lit. Notes, junctions and stage headings carry no licence and are dimmed. Where Microsoft publishes no SKU for a capability, the node says so rather than showing a guess \u2014 always confirm entitlements on a quote, not from a diagram.",
+    implementedBy: "Source: each capability\u2019s own Microsoft Learn documentation and the Microsoft Purview service description."
+  },
+
+  /* Build stamp. A LITERAL authoring date \u2014 not a runtime clock. This states when
+     the architecture content was last verified against Microsoft documentation, which
+     is what a reader needs to judge staleness. Update it by hand with each content
+     revision; never replace it with new Date(). */
+  stamp: { label:"Content verified:", date:"29 September 2026" },
+
+  /* Private-preview callout (renders only when such a node exists). */
+  privateCallout: { heading:"\u26a0 Private preview content — remove before external sharing" }
+};
+
+/* ============================================================================
+   EDGE_KINDS — one definition per connector type: how it draws, what it means
+   in the legend, and how it reads in a tooltip. Add a kind here and the legend
+   picks it up automatically.
+   ============================================================================ */
+/* Licensing lenses. Pure data: a lens keeps a node when its license array
+   contains every value in `includes` and none of the values in `excludes`.
+   "E5 only" is expressed as includes E5 / excludes E3 so the lens answers the
+   real question — what do I gain by moving up — rather than just listing
+   everything an E5 tenant can use. */
+const LICENSE_LENSES = [
+  { id:"e3",      name:"Included in E3",            includes:["E3"],      excludes:[] },
+  { id:"e5only",  name:"E5 only \u2014 delta over E3",  includes:["E5"],      excludes:["E3"] },
+  { id:"payg",    name:"Pay-as-you-go",             includes:["PAYG"],    excludes:[] }
+];
+
+const EDGE_KINDS = {
+  solid:  { legend:"Automatic (in-transit)",   tooltip:"in-transit" },
+  dashed: { legend:"On-demand (at rest)",      tooltip:"on-demand / at rest" },
+  dotted: { legend:"Signal / telemetry — metadata about the item, not the item itself",
+            tooltip:"signal / telemetry" }
+};
+
+const ARCHITECTURE = {
+
+  stages: [
+    /* Each stage header carries the question it answers (`q`) plus a plain-language
+       line (`d`) saying what happens there. Together these ARE the 10-second read —
+       there is no separate summary bar above the diagram. */
+    { n:1, label:"1 · User input",                 q:"Where does information originate?",
+      d:"Content people create, upload, send or type" },
+    { n:2, label:"2 · Information is classified",  q:"What is it?",
+      d:"The service detects what the content contains" },
+    { n:3, label:"3 · Labeling files",             q:"What is the default security posture and what did the user intend?",
+      d:"Optional, but durable: a label is a protection control plane that signals user intent" },
+    { n:4, label:"4 · Protection",                 q:"What do we do about it?",
+      d:"DLP, encryption, access and retention enforce it" },
+    { n:5, label:"5 · Insights",                   q:"What did we learn?",
+      d:"Posture, audit and alerts" }
+  ],
+
+  /* Visual sub-group boxes drawn behind a set of nodes. */
+  groups: [
+    { id:"grp-classifiers", label:"Classifier layers", nodeIds:
+      ["declarative-classifiers","edm","named-entities","document-fingerprinting","trainable-classifiers","ai-classifiers"] },
+    /* `cohesive` = the members are PEERS, released together, not a pipeline. Selecting
+       any one highlights all of them. Deliberately opt-in per group: the classifier
+       group must NOT behave this way, or selecting one engine would wrongly drag in
+       every sibling engine. */
+    { id:"grp-autolabel-preview", cohesive:true, label:"Auto-labeling — default security posture", nodeIds:
+      ["autolabel-scale-capacity","autolabel-scalability","autolabel-coverage-report","autolabel-library-default"] }
+  ],
+
+  nodes: [
+    /* ---------- STAGE 1 · USER INPUT (content objects only) ---------- */
+    { id:"prompt", primary:true, license:["E3","E5"], stage:1, col:0, cat:"content", status:"na",
+      title:"Prompt (Copilot Chat / Microsoft 365 Copilot)", meta:"Typed/pasted text, uploaded file, image, or link",
+      detail:{
+        sees:"Prompt content sent to Copilot: typed or pasted text, an uploaded file, an image, or a link. Copilot Chat is included at no extra cost with eligible Microsoft 365 plans (E3/E5, A3/A5, Business Standard/Premium) and needs no add-on licence; the Microsoft 365 Copilot add-on adds grounding on work data through Microsoft Graph.",
+        can:"Prompt text is inspected for sensitive information types in real time so DLP for Copilot can act on it.",
+        limits:"A prompt is not itself a labeled object — it carries no persistent sensitivity label, and no labeling method applies to it, client-side auto-labeling included.",
+        status:"Not applicable — content object, not a feature." } },
+
+    { id:"files", primary:true, license:["E3","E5"], stage:1, col:0, cat:"content", status:"na",
+      title:"Files", meta:"OneDrive / SharePoint",
+      detail:{
+        sees:"Files at rest in OneDrive and SharePoint. Classification reaches many file formats.",
+        can:"A file can carry a sensitivity label, encryption, permissions, and retention at the same time; it is inspected by classification and DLP.",
+        limits:"Auto-labeling of files at rest is limited to supported Office file types and PDF.",
+        status:"Not applicable — content object, not a feature." } },
+
+    /* The SAME file, travelling. Modelled as its own content object because the
+       file-based engines (EDM, fingerprinting, trainable classifiers) follow the FILE
+       into Exchange and Teams — they do not evaluate the message or email body. This
+       is the distinction that reconciles "fingerprinting supports Teams" with "a Teams
+       message is not fingerprint-matched": the file is in scope, the message text is not. */
+    { id:"attached-files", primary:true, license:["E3","E5"], stage:1, col:0, cat:"content", status:"na",
+      title:"Files in transit", meta:"Email attachments · files shared in Teams",
+      detail:{
+        sees:"The same file as it travels: attached to an email in Exchange, or shared into a Teams chat or channel.",
+        can:"Carries its sensitivity label, encryption and permissions with it. File-based engines — EDM, document fingerprinting and trainable classifiers — evaluate the file itself in these workloads.",
+        limits:"The file is the unit of evaluation here, not the message or email body that carries it.",
+        status:"Not applicable — content object, not a feature." } },
+
+    /* Files living on an onboarded endpoint. Endpoint DLP is the control that watches
+       them, so this object exists to make the device egress path visible. */
+    { id:"device-files", primary:true, license:["E5"], stage:1, col:0, cat:"content", status:"na",
+      title:"Files on devices", meta:"Windows & macOS endpoints",
+      detail:{
+        sees:"Files physically stored on onboarded Windows 10/11, Windows Server 2019+ and macOS (three latest versions) devices.",
+        can:"Fully scanned for sensitive information types and labels whenever a file is created or modified; monitored egress activities include copy to USB, copy to network share, print, copy to clipboard, upload to a restricted cloud service domain, Bluetooth and RDP transfer. Advanced classification enables document fingerprinting, EDM and trainable classifiers on macOS.",
+        limits:"Data never saved to a file on the device can't be scanned or classified. Endpoint DLP can't detect a sensitivity label applied by another tenant. Executables and system files (.exe, .dll, .sys and similar) aren't monitored.",
+        status:"Not applicable — content object, not a feature." } },
+
+    { id:"teams-messages", primary:true, license:["E3","E5"], stage:1, col:0, cat:"content", status:"na",
+      title:"Chats / channel messages", meta:"Microsoft Teams",
+      detail:{
+        sees:"Chat and channel messages in Microsoft Teams.",
+        can:"Evaluated by DLP using syntactic SITs and EDM, both of which cover Teams chat. A FILE shared into a chat or channel is evaluated separately — see Files in transit.",
+        limits:"A Teams message carries no per-message sensitivity label and is not labeled by any labeling method. EDM covers Teams chat for DLP; for document fingerprinting and trainable classifiers the documented unit of evaluation is the shared FILE, and whether message text itself can match them is UNKNOWN.",
+        status:"Not applicable — content object, not a feature." } },
+
+    { id:"emails", primary:true, license:["E3","E5"], stage:1, col:0, cat:"content", status:"na",
+      title:"Emails", meta:"Outlook / Exchange",
+      detail:{
+        sees:"The email itself in Outlook / Exchange — subject, body and headers. An attachment is evaluated as a file — see Files in transit.",
+        can:"Email can carry a sensitivity label and encryption, and is evaluated by DLP using syntactic SITs.",
+        limits:"Whether the email BODY can be matched by EDM, document fingerprinting or trainable classifiers is UNKNOWN — the documented scenario for those engines is the attached file.",
+        status:"Not applicable — content object, not a feature." } },
+
+    /* ---------- STAGE 2 · CLASSIFICATION (Data Classification Service) ---------- */
+    { id:"automatic-classification", primary:true, license:["E3","E5"], stage:2, col:0, cat:"control", status:"ga",
+      title:"Automatic classification", meta:"In-transit — on create, upload, or modify",
+      detail:{
+        sees:"Content as it is created, uploaded, or modified.",
+        can:"Classifies content in transit using the tenant's classifiers.",
+        limits:"Classification is a detection fact; it is not persisted on the object as intent and does not, by itself, apply a label.",
+        status:"Generally available." } },
+
+    /* CONSTRAINT: an admin-initiated scan of data at rest cannot trigger client-side
+       auto-labeling, which is evaluated by the Office app as the user works. */
+    { id:"on-demand-classification", primary:true, license:["PAYG"], stage:2, col:0, cat:"control", status:"ga",
+      scope:{ excludeNodes:["client-side-auto-labeling"] },
+      title:"On-demand classification", meta:"At rest — admin-initiated scan",
+      links:[
+        { text:"learn.microsoft.com/purview/on-demand-classification", href:"https://learn.microsoft.com/purview/on-demand-classification" },
+        { text:"On-demand classification for endpoints", href:"https://learn.microsoft.com/purview/on-demand-classification-endpoints" }
+      ],
+      detail:{
+        sees:"Historical / inactive files at rest in SharePoint, OneDrive, and Windows endpoints (admin-initiated scan).",
+        can:"Classifies data at rest using the tenant's current classifiers. Service-side auto-labeling can then leverage the refreshed classifier results.",
+        limits:"Classifies but does not apply labels. Pay-as-you-go billing (not E5-inclusive).",
+        status:"Generally available." } },
+
+    { id:"declarative-classifiers", license:["E3","E5"], stage:2, col:1, cat:"service", status:"ga",
+      title:"SIT (syntactic)", meta:"Regex, keywords, keyword dictionaries",
+      links:[ { text:"Learn about sensitive information types", href:"https://learn.microsoft.com/purview/sit-sensitive-information-type-learn-about" } ],
+      detail:{
+        sees:"Content matched against regex, keywords, and keyword dictionaries, with confidence and proximity tuning.",
+        can:"Detects sensitive information types syntactically — the broadest-reach engine, and the only one that evaluates Teams message text and email body text as well as files.",
+        limits:"A SIT applies only to content created or modified AFTER the SIT was created or last modified — which is exactly why on-demand classification exists for older content.",
+        status:"Generally available." } },
+
+    /* SCOPE per Learn "Services that EDM supports": DLP covers SharePoint, OneDrive,
+       Teams Chat, Exchange Online and Devices; service-side auto-labeling covers
+       SharePoint, OneDrive and Exchange Online; client-side auto-labeling covers Word,
+       Excel, PowerPoint and Exchange desktop clients. EDM therefore feeds BOTH
+       auto-labeling paths and reaches Teams chat — no object exclusions. */
+    { id:"edm", license:["E5"], stage:2, col:1, cat:"service", status:"ga",
+      title:"Exact Data Match (EDM)", meta:"Exact match against your uploaded sensitive data",
+      links:[ { text:"Learn about EDM-based SITs", href:"https://learn.microsoft.com/purview/sit-learn-about-exact-data-match-based-sits" } ],
+      detail:{
+        sees:"Content compared against a hashed, uploaded copy of the organization's own structured sensitive data — a table that can hold up to 100 million rows and be refreshed daily.",
+        can:"Exact rather than pattern-based detection, for fewer false positives. DLP: SharePoint, OneDrive, Teams chat, Exchange Online, Devices. Service-side auto-labeling: SharePoint, OneDrive, Exchange Online. Client-side auto-labeling: Word, Excel, PowerPoint, Exchange desktop clients.",
+        limits:"For client-side auto-labeling, EDM can't be the only condition — you must also specify at least one non-EDM sensitive information type, or the auto-labeling setting is turned off for that label. A primary element must be detectable by an existing SIT, and supporting elements must fall within the configured proximity. Whether prompt text is evaluated is UNKNOWN.",
+        status:"Generally available." } },
+
+    /* Dictionary + pattern based, not regex. Carries prerequisites nothing else in this
+       column has: Advanced classification scanning and protection must be enabled, and
+       entity match is an E5 capability. */
+    { id:"named-entities", license:["E5"], stage:2, col:1, cat:"service", status:"ga",
+      title:"Named entities", meta:"Bundled / unbundled — names, addresses, medical terms",
+      links:[
+        { text:"Learn about named entities", href:"https://learn.microsoft.com/purview/sit-named-entities-learn" },
+        { text:"Use named entities in DLP policies", href:"https://learn.microsoft.com/purview/sit-named-entities-use" }
+      ],
+      detail:{
+        sees:"Person names, physical addresses, and medical terms and conditions. Bundled SITs detect all matches in a class (All full names, All physical addresses, All medical terms and conditions); unbundled SITs narrow to a single country or class of terms.",
+        can:"Complex dictionary and pattern-based detection — not regex. Supported for DLP and auto-labeling across SharePoint, OneDrive, Teams chat and channel messages, Exchange, and Windows 10/11 devices, and used by the enhanced DLP policy templates (GLBA, HIPAA, GDPR Enhanced).",
+        limits:"Advanced classification scanning and protection must be enabled before named entity SITs are discoverable, and entity match requires E5. Person names are Latin-character only — Chinese, Japanese and Korean kanji aren't supported. Not supported for on-premises repositories, Power BI, or the Information Protection scanner. Policy tips return \"no match\" in OWA and Office Win32 clients when an entity condition is used. They can't be edited or copied.",
+        status:"Generally available." } },
+
+    /* CONSTRAINT: document fingerprinting reaches DLP ONLY — it does not feed any
+       labeling method. Do not add an edge from here to a Stage 3 node. */
+    { id:"document-fingerprinting", license:["E5"], stage:2, col:1, cat:"service", status:"ga",
+      /* FILE-BASED: evaluates the file, including a file attached to an email or shared
+         in Teams. Does NOT evaluate Teams message text or email body text. */
+      scope:{ objects:["files","attached-files","device-files"] },
+      title:"Document fingerprinting", meta:"Matches known document templates",
+      links:[ { text:"About document fingerprinting", href:"https://learn.microsoft.com/purview/sit-document-fingerprinting" } ],
+      detail:{
+        sees:"Files compared against fingerprints of known document templates — including files attached to email or shared in Teams.",
+        can:"Detects files created from a fingerprinted template — the documented scenario is blocking outbound documents in mail that match the fingerprint. Feeds DLP policy evaluation.",
+        limits:"Matches the FILE, not Teams message text or email body text. Does not detect password-protected files, image-only files, files over 4 MB, or documents missing text from the original form. Whether body text can match a fingerprint is UNKNOWN.",
+        status:"Generally available." } },
+
+    { id:"trainable-classifiers", license:["E5"], stage:2, col:1, cat:"service", status:"ga",
+      /* FILE-BASED: evaluates the file, including a file attached to an email or shared
+         in Teams. Does NOT evaluate Teams message text or email body text. */
+      scope:{ objects:["files","attached-files","device-files"] },
+      title:"Trainable classifiers", meta:"Pre-trained and custom (ML)",
+      links:[ { text:"Learn about trainable classifiers", href:"https://learn.microsoft.com/purview/trainable-classifiers-learn-about" } ],
+      detail:{
+        sees:"Files evaluated by machine-learning classifiers (pre-trained and custom), including files attached to email or shared in Teams.",
+        can:"Detects content by learned category rather than exact match. Feeds service-side auto-labeling and DLP policy evaluation.",
+        limits:"Only work with items that aren't encrypted. Custom classifiers are limited to English. A label whose only condition is a trainable classifier can't be converted into an auto-labeling policy. Whether Teams message text or email body text is evaluated is UNKNOWN.",
+        status:"Generally available." } },
+
+    /* CONSTRAINT: a real detection engine, but narrowly scoped — prompts and the
+       content/files used for Copilot responses — and consumed by service-side
+       auto-labeling only. Not client-side auto-labeling, not general DLP. */
+    { id:"ai-classifiers", stage:2, col:1, cat:"service", status:"public-roadmap",
+      title:"AI classifiers (semantic)", meta:"Prompts & Copilot-grounded content",
+      scope:{ objects:["files","prompt"], excludeNodes:["client-side-auto-labeling","dlp-policy"] },
+      links:[ { text:"Roadmap ID 560708", href:"https://www.microsoft.com/microsoft-365/roadmap?id=560708" } ],
+      detail:{
+        sees:"Prompts, content within prompts, and files used to ground Microsoft 365 Copilot responses.",
+        can:"Classifies content semantically, improving on base sensitive information types. Feeds service-side auto-labeling.",
+        limits:"Available only for prompts, content in prompts, and files used for Copilot responses — and only to service-side auto-labeling. Not used by client-side auto-labeling or by general DLP policy evaluation. On the public roadmap; not generally available. Licensing: UNKNOWN — not yet publicly disclosed and subject to change.",
+        status:"PUBLIC ROADMAP — Roadmap ID 560708." } },
+
+    /* Management / experience note — sits below the five classifier engines and is
+       intentionally OUTSIDE the "Classifier layers" group (cat:"note", not a blue
+       service rail) to make clear it MANAGES classifiers rather than being a sixth
+       detection engine. */
+    { id:"unified-classification-mgmt", stage:2, col:1, cat:"note", status:"public-roadmap",
+      title:"Unified classification management experience",
+      links:[ { text:"Roadmap ID 570844", href:"https://www.microsoft.com/microsoft-365/roadmap?id=570844" } ],
+      detail:{
+        sees:"All classifiers in Microsoft Purview — Sensitive Information Types (SITs), Exact Data Match (EDM), fingerprint SITs, and trainable classifiers.",
+        can:"Unifies every classifier into one place to discover, create, validate, and manage classifiers.",
+        limits:"UNKNOWN — no behaviour beyond the above is documented here.",
+        status:"PUBLIC ROADMAP (in development). Preview: September CY2026. GA: November CY2026. Worldwide (Standard Multi-Tenant). Roadmap ID 570844." } },
+
+    /* ---------- STAGE 3 · LABELING FILES (applies to supported Office file types and PDF) ---------- */
+    { id:"default-label", primary:true, license:["E3","E5"], stage:3, col:0, cat:"service", status:"ga",
+      title:"Default label from policy", meta:"Applied when content has no label",
+      links:[ { text:"Learn about sensitivity labels (label policies)", href:"https://learn.microsoft.com/purview/sensitivity-labels" } ],
+      scope:{ objects:["files","emails"] },
+      detail:{
+        sees:"New content with no label.",
+        can:"Applies a default sensitivity label from policy.",
+        limits:"Resolves against the configured label priority order.",
+        status:"Generally available." } },
+
+    /* Fed by syntactic SITs, EDM and trainable classifiers. NOT by AI classifiers or
+       document fingerprinting. */
+    { id:"client-side-auto-labeling", primary:true, license:["E5"], stage:3, col:0, cat:"service", status:"ga",
+      title:"Client-side auto-labeling", meta:"Office apps — auto-apply or recommend",
+      links:[ { text:"Automatically apply a sensitivity label", href:"https://learn.microsoft.com/purview/apply-sensitivity-label-automatically" } ],
+      scope:{ objects:["files","emails"] },
+      detail:{
+        sees:"Content in Office apps as the user works.",
+        can:"Auto-applies or recommends a label in Word, Excel, PowerPoint and Outlook as the user works, using syntactic SITs, EDM and trainable classifiers. Supports recommending a label — the user accepts or rejects it.",
+        limits:"Depends on the app version the user has installed. No PDF support, no simulation mode, and it can't label incoming email. EDM can't be the only condition — at least one non-EDM SIT is required, or auto-labeling is turned off for the label. Not fed by AI classifiers or document fingerprinting.",
+        status:"Generally available." } },
+
+    { id:"default-library-label", primary:true, license:["E3","E5"], stage:3, col:0, cat:"service", status:"ga",
+      title:"Default label — SharePoint library", meta:"Location-based; no content inspection",
+      scope:{ objects:["files"] },
+      links:[ { text:"Default sensitivity label for a SharePoint library", href:"https://learn.microsoft.com/purview/sensitivity-labels-sharepoint-default-label" } ],
+      detail:{
+        sees:"The SharePoint document library location (no content inspection).",
+        can:"Applies a default sensitivity label to documents based on their library.",
+        limits:"Location-based; performs no content inspection. Today it applies only to new or edited files, not to files already at rest — see “Library default label — data at rest” (Roadmap ID 559105) for the preview that closes this gap.",
+        status:"Generally available." } },
+
+    /* CONSTRAINT: covers files in SharePoint/OneDrive and email in Exchange ONLY —
+       not Teams chat/channel messages. Document fingerprinting and EDM do not feed it. */
+    { id:"service-side-auto-labeling", primary:true, license:["E5"], stage:3, col:0, cat:"service", status:"ga",
+      title:"Service-side auto-labeling", meta:"SharePoint & OneDrive at rest · Exchange in transit",
+      scope:{ objects:["files","emails"] },
+      links:[ { text:"Apply a sensitivity label automatically", href:"https://learn.microsoft.com/purview/apply-sensitivity-label-automatically" } ],
+      detail:{
+        sees:"Files at rest in SharePoint and OneDrive, and email in transit through Exchange — sent or received, NOT email already at rest in mailboxes. Plus classifier results, including refreshed results from on-demand classification.",
+        can:"Applies labels in the service, independent of the user's app version, which is what makes it the scale path. Runs in simulation before enforcement, and can be configured to override a manually applied label of lower priority.",
+        limits:"Applies to supported Office file types and PDF. Doesn't reach email at rest in mailboxes. For Exchange attachments the EMAIL is labeled, not the attachment. Visual markings (headers, footers, watermarks) are not applied to documents by auto-labeling policies. No recommended-label option — the user isn't in the loop.",
+        status:"Generally available." } },
+
+    /* --- Auto-labeling at scale (PUBLIC PREVIEW, worldwide) — three individually
+           referenced items + one item that has no reference yet, grouped in a
+           sub-column so the labeling paths in col 0 stay readable. --- */
+    /* THE control plane. Protection follows the LABEL, not the method that applied it —
+       a manually applied label carries the same encryption as an auto-applied one.
+       Every labeling method feeds this node; this node feeds protection. Without it
+       the diagram wrongly implies only service-side auto-labeling leads to protection. */
+    { id:"label-applied", primary:true, license:["E3","E5"], stage:3, col:1, cat:"service", status:"ga",
+      title:"Sensitivity label applied",
+      meta:"However it was applied, the label is what carries protection",
+      scope:{ objects:["files","attached-files","device-files","emails"] },
+      links:[ { text:"Learn about sensitivity labels", href:"https://learn.microsoft.com/purview/sensitivity-labels" } ],
+      detail:{
+        sees:"The label stamped into an item's metadata by any of the five labeling methods.",
+        can:"Carries the protection configured on the label — encryption and usage rights, access, retention and DLP conditions — and travels with the item wherever it goes, because the label is stored in clear-text metadata. Downstream controls act on the label itself, not on how it was applied.",
+        limits:"An item can carry only one sensitivity label at a time; which one wins is resolved by label priority. Labels apply to files and email, not to Teams chat or channel messages, and a prompt is not a labeled object.",
+        status:"Generally available." } },
+    { id:"autolabel-scale-capacity", stage:3, col:1, cat:"service", status:"public-preview",
+      title:"Scale increase — SharePoint / OneDrive",
+      meta:"Up to 500,000 files/day",
+      bullets:[
+        "“Keep on” when editing a policy — no re-simulation"
+      ],
+      links:[ { text:"Roadmap ID 567890", href:"https://www.microsoft.com/microsoft-365/roadmap?id=567890" } ],
+      detail:{
+        sees:"Files at rest in SharePoint and OneDrive eligible for service-side auto-labeling.",
+        can:"Increases the maximum auto-labeling capacity for SharePoint and OneDrive from 100,000 up to 500,000 files per tenant per day, so more data at rest can be labeled and protected faster — closing labeling gaps across existing content to prepare the data estate for Microsoft 365 Copilot. Also allows an existing policy to be kept on while it is edited, without re-triggering simulation.",
+        limits:"None documented beyond the stated capacity.",
+        status:"PUBLIC PREVIEW. Preview: September CY2026. GA: October CY2026. Roadmap ID 567890. The “keep on” behaviour is published worldwide; the message centre post is expected to be updated to cover it." } },
+
+    { id:"autolabel-scalability", stage:3, col:1, cat:"service", status:"public-preview",
+      title:"Scalability, policy management & reporting",
+      meta:"Simulation 4M → 20M; bigger scopes",
+      links:[
+        { text:"Roadmap ID 570445", href:"https://www.microsoft.com/microsoft-365/roadmap?id=570445" },
+        { text:"MC1469958", href:"https://mc.merill.net/message/MC1469958" }
+      ],
+      detail:{
+        sees:"Auto-labeling policy configuration, simulation, audit, and reporting.",
+        can:"Simulation capacity increases from 4 million to 20 million items; admins can select up to 1,000 individual SharePoint sites when configuring a policy; adaptive scopes support up to 50,000 SharePoint sites per policy; audit and reporting include summaries of the sensitive information types detected when labels are applied; SharePoint sites can be filtered by the SiteTemplate property during policy configuration; and a new 30-day chart shows files processed per day for monitoring policy throughput.",
+        limits:"On by default; existing auto-labeling policies continue to function unmodified, with no end-user impact.",
+        status:"PUBLIC PREVIEW. Public Preview: early–mid September 2026. GA (Worldwide): late October 2026. Roadmap ID 570445, detailed in MC1469958." } },
+
+    { id:"autolabel-coverage-report", stage:3, col:1, cat:"service", status:"public-preview",
+      title:"Per-policy coverage report",
+      meta:"Enforced files vs. latest simulation",
+      links:[ { text:"Roadmap ID 568935", href:"https://www.microsoft.com/microsoft-365/roadmap?id=568935" } ],
+      detail:{
+        sees:"For each enforced auto-labeling policy, the files processed during enforcement relative to the latest simulation run.",
+        can:"Shows how files processed during enforcement correlate to the latest simulation run — volumes of files labeled or not yet labeled and whether those files were included in the last simulation snapshot — and identifies files that were not found in the simulation snapshot but were processed during enforcement.",
+        limits:"None documented.",
+        status:"PUBLIC PREVIEW. Preview: September CY2026. GA: September CY2026. Roadmap ID 568935." } },
+
+    /* Published worldwide. No public Learn or roadmap reference exists for this
+       behaviour, so the node carries no link — it is GA (implicit), not preview. */
+
+    /* Manual / override is intentionally the LAST labeling method, immediately
+       before the Label priority note. */
+    { id:"manual-label", primary:true, license:["E3","E5"], stage:3, col:0, cat:"service", status:"ga",
+      title:"Manual / override", meta:"User-applied label",
+      scope:{ objects:["files","emails"] },
+      detail:{
+        sees:"A user's explicit choice of sensitivity label, including override of an applied label.",
+        can:"Applies a label as a durable decision stamped into the object's metadata.",
+        limits:"Subject to the configured label priority order.",
+        status:"Generally available." } },
+
+    { id:"label-priority", stage:3, col:0, cat:"note", status:"na",
+      title:"Label priority", meta:"Labeling applies to supported Office file types and PDF",
+      noteBody:"Manually applied labels are highest priority, except where a service-side auto-labeling rule is configured to override them. All automatic and default labeling methods resolve against the configured label priority order.",
+      links:[ { text:"Apply a sensitivity label automatically", href:"https://learn.microsoft.com/purview/apply-sensitivity-label-automatically" } ],
+      detail:{
+        sees:"The set of labeling methods competing to apply a label to an object.",
+        can:"Resolves which label wins across all labeling paths.",
+        limits:"Manually applied labels are highest priority, except where a service-side auto-labeling rule is configured to override them.",
+        status:"Generally available (labeling behavior). Labeling applies to supported Office file types and PDF." } },
+
+    /* Every labeling ACTION is recorded, whichever method applied it. Modelled as a
+       single node all five methods feed, so the audit/activity signal is shown once
+       for labeling as a whole rather than hanging off one method. */
+
+    /* Closes the documented gap in the SharePoint library default label: today it
+       does NOT apply to existing files at rest. See the Default label — SharePoint
+       library node's limitation. */
+    { id:"autolabel-library-default", stage:3, col:1, cat:"service", status:"public-preview",
+      title:"Library default label — data at rest",
+      meta:"Applies the library's default label to existing files",
+      links:[
+        { text:"Roadmap ID 559105", href:"https://www.microsoft.com/microsoft-365/roadmap?id=559105" },
+        { text:"MC1477181", href:"https://mc.merill.net/message/MC1477181" }
+      ],
+      detail:{
+        sees:"Existing files already at rest in a SharePoint document library that has a default sensitivity label configured.",
+        can:"Auto-labels existing SharePoint files to match the default sensitivity label configured on their document library — closing labeling gaps for data at rest and giving consistent, secure-by-default protection across libraries without relying on manual user labeling. This addresses the standing limitation that a library default label applies only to new or edited files.",
+        limits:"SharePoint only — the library default label has no equivalent in OneDrive or Exchange.",
+        status:"PUBLIC PREVIEW. Preview: September CY2026. GA: October CY2026. Worldwide (Standard Multi-Tenant). Roadmap ID 559105, detailed in MC1477181." } },
+
+    /* Prerequisites that silently break labeling when missed. Placed here because every
+       labeling method in this stage depends on them. */
+    { id:"labeling-prereqs", stage:3, col:1, cat:"note", status:"na",
+      title:"Prerequisites",
+      noteBody:"Miss one of these and policies run without labeling anything — usually with no error shown in the portal.",
+      bullets:[
+        "Sensitivity labels enabled for Office files in SharePoint & OneDrive",
+        "PDF support enabled separately for SharePoint (EnableSensitivityLabelForPDF)",
+        "Auditing on — required for auto-labeling simulation",
+        "Labels published to at least one user; a parent label can't be applied",
+        "Label scope must include Files and/or Emails to match the target content"
+      ],
+      links:[ { text:"Prerequisites for auto-labeling policies", href:"https://learn.microsoft.com/purview/apply-sensitivity-label-automatically" } ],
+      detail:{
+        sees:"Tenant and label configuration that labeling depends on.",
+        can:"When all are in place, client-side and service-side labeling apply labels as configured.",
+        limits:"Sensitivity labels must be enabled for Office files in SharePoint and OneDrive, and PDF support is a separate switch (EnableSensitivityLabelForPDF) — without it PDFs aren't labeled. Auditing must be on for simulation. A parent label can never be applied to content. The label's scope must include Files & other data assets to label documents, and Emails to label email. Auto-labeling evaluates only content created or modified after the sensitive information type was created or last modified — use on-demand classification for older files.",
+        status:"Not applicable — configuration prerequisites." } },
+
+    /* Placed in col 1 (beside the auto-labeling sub-column, OUTSIDE its group box) so
+       the five feeds from col 0 route as adjacent-column elbows. They share an identical
+       midpoint, so they merge into one vertical trunk in the gap and fan in — no line
+       crosses a card. It is NOT part of the auto-labeling group: every labeling method
+       feeds it, which its cat:"control" styling and position below the box make clear. */
+    { id:"label-activity", primary:true, license:["E5"], stage:3, col:1, cat:"control", status:"ga",
+      title:"Labeling activity", meta:"Every apply, change, downgrade and removal is recorded",
+      links:[ { text:"Get started with activity explorer", href:"https://learn.microsoft.com/purview/data-classification-activity-explorer" } ],
+      detail:{
+        sees:"Label actions taken by any method — manual, default, client-side, library default, or service-side — across Office apps, SharePoint, OneDrive and Exchange.",
+        can:"Records label applied, label changed (upgraded, downgraded or removed), and auto-labeling simulation events. Where a policy requires justification for lowering a label, admins can read that justification alongside the label change. The Information Protection client and scanner add protection applied, changed and removed, and files discovered.",
+        limits:"Activity explorer is not real-time and reports on up to 30 days of data. Legacy Azure Information Protection labels aren't supported and can appear as GUIDs.",
+        status:"Generally available." } },
+
+    /* ---------- STAGE 4 · PROTECTION (enforcement) ---------- */
+    /* CONSTRAINT: this node is the five NON-Copilot locations. Prompts are evaluated by
+       the separate "DLP for Microsoft 365 Copilot" location, so a prompt must never
+       resolve to this node — see its own meta line. */
+    { id:"dlp-policy", primary:true, license:["E3","E5"], stage:4, col:0, cat:"enforce", status:"ga",
+      scope:{ objects:["files","attached-files","device-files","teams-messages","emails"] },
+      title:"DLP policy evaluation", meta:"Exchange, SharePoint, OneDrive, Teams, Endpoint",
+      links:[
+        { text:"Learn about data loss prevention", href:"https://learn.microsoft.com/purview/dlp-learn-about-dlp" },
+        { text:"DLP policy reference", href:"https://learn.microsoft.com/purview/dlp-policy-reference" },
+        { text:"Learn about Endpoint DLP", href:"https://learn.microsoft.com/purview/endpoint-dlp-learn-about" }
+      ],
+      detail:{
+        sees:"Content and its classification across Exchange, SharePoint, OneDrive, Teams chat and channel messages, and onboarded Windows and macOS devices (Endpoint DLP).",
+        can:"Evaluates DLP policy and enforces protective actions based on content (classification-driven) — including device egress on endpoints: copy to USB, copy to a network share, print, copy to clipboard, upload to a restricted service domain or unallowed browser, Bluetooth and RDP transfer. Just-in-time protection holds egress until evaluation completes.",
+        limits:"On endpoints a policy applies only when BOTH the user and the device are in scope. Data never saved to a file on a device can't be scanned, a label applied by another tenant can't be detected, and enforcement events don't reach activity explorer until an offline device reconnects.",
+        status:"Generally available." } },
+
+    { id:"dlp-copilot", primary:true, license:["E5"], stage:4, col:0, cat:"enforce", status:"ga",
+      scope:{ objects:["prompt","files","attached-files","emails"] },
+      title:"DLP for Microsoft 365 Copilot & Copilot Chat", meta:"Restrictions by label, SITs, and grounding source",
+      links:[ { text:"DLP for Microsoft 365 Copilot", href:"https://learn.microsoft.com/purview/dlp-microsoft365-copilot-location-learn-about" },
+              { text:"MC1477182 · DLP for Microsoft Cowork", href:"https://mc.merill.net/message/MC1477182" } ],
+      detail:{
+        sees:"Files and emails carrying specific sensitivity labels, and prompts containing sensitive information types.",
+        can:"Restrict processing of files and emails with specific labels; restrict processing of prompts containing SITs; block external web search as a grounding source when a prompt contains SITs. A Microsoft 365 Copilot licence is NOT required — the control is licensed on the Purview side and covers Copilot Chat as well as Microsoft 365 Copilot. The same policies extend to Microsoft Cowork: policies that target the Microsoft 365 Copilot workload apply to Cowork automatically, and new Copilot policies include it by default — no separate configuration.",
+        limits:"A single rule can't combine the 'content contains sensitive info types' and 'content contains sensitivity labels' conditions — use one rule per condition within the same policy. Prompt and web-search DLP apply to the prompt text only, not to uploaded files at this time — the contents of a file uploaded directly into a prompt aren't evaluated. The location is available only in the Custom policy template, selecting it disables all other locations in that policy, it doesn't support administrative units, and policy updates can take up to four hours to take effect.",
+        status:"Generally available. Coverage of Microsoft Cowork is in public preview from late September 2026, with general availability expected late October 2026 (roadmap 570845)." } },
+
+    /* B: makes the dual-input nature of DLP explicit, and carries the two asymmetries
+       customers are most often surprised by. */
+    { id:"dlp-conditions", stage:4, col:0, cat:"note", status:"na",
+      title:"DLP conditions — content and/or intent",
+      noteBody:"A DLP rule can act on what the content IS, on what the label SAYS, or on both together — combined with Any of these (OR) or All of these (AND).",
+      bullets:[
+        "Sensitive information types · Trainable classifiers  → content-based",
+        "Sensitivity labels · Retention labels  → intent-based",
+        "Teams chat & channel: SITs only — labels can't be a condition",
+        "Microsoft 365 Copilot: labels only — SITs aren't a condition",
+        "Multi-location policy: a “no” beats a “yes” — adding Teams strips label conditions"
+      ],
+      links:[ { text:"DLP policy reference — location support", href:"https://learn.microsoft.com/purview/dlp-policy-reference" } ],
+      detail:{
+        sees:"The conditions available to a DLP rule, which differ by the locations the policy targets.",
+        can:"All locations support the Content contains condition, which accepts sensitive information types, sensitivity labels, retention labels and trainable classifiers — selectable together and refined with Any of these (logical OR) or All of these (logical AND). Exchange, SharePoint, OneDrive and Devices support both SITs and sensitivity labels; SharePoint and OneDrive also support retention labels.",
+        limits:"Teams chat and channel messages can be defined by SITs only — not by sensitivity or retention labels. The Microsoft 365 Copilot location is the mirror image: sensitivity labels only, not SITs, and a single rule can't combine the two conditions. When a policy targets multiple locations, a “no” for a content-definition category takes precedence over a “yes”, so adding Teams to a SharePoint policy removes label conditions from the whole policy.",
+        status:"Not applicable — policy configuration behaviour." } },
+
+    { id:"encryption", primary:true, license:["E3","E5"], stage:4, col:0, cat:"enforce", status:"ga",
+      title:"Encryption / usage rights", meta:"AI apps need EXTRACT + VIEW",
+      detail:{
+        sees:"Labeled content and its usage rights.",
+        can:"Encrypts content and enforces usage rights that travel with the object.",
+        limits:"AI apps require the EXTRACT usage right in addition to VIEW to return labeled encrypted content.",
+        status:"Generally available." } },
+
+    { id:"permissions", primary:true, license:["E3","E5"], stage:4, col:0, cat:"enforce", status:"ga",
+      title:"Permissions / access", meta:"Access enforcement",
+      detail:{
+        sees:"Who is requesting the content, and the usage rights the label grants them.",
+        can:"Enforces access independently of the label — a user must have permission to the item before any Purview control is reached. Copilot and agents honour these permissions: data a user can't access is never returned or used for grounding.",
+        limits:"None documented.",
+        status:"Generally available." } },
+
+    /* The protection that travels INTO generated content. Documented behaviour: a
+       Copilot response inherits the highest-priority (most restrictive) label of the
+       items it referenced. Note the contrast with encryption applied WITHOUT a label,
+       where Learn states there is no automatic inheritance for new items. */
+    { id:"label-inheritance", primary:true, license:["E5"], stage:4, col:0, cat:"enforce", status:"ga",
+      title:"Label inheritance — Copilot responses", meta:"Generated content inherits the most restrictive label",
+      links:[
+        { text:"Sensitivity labels for Microsoft 365 Copilot", href:"https://learn.microsoft.com/purview/sensitivity-labels" },
+        { text:"Purview protections for generative AI apps", href:"https://learn.microsoft.com/purview/ai-microsoft-purview" }
+      ],
+      detail:{
+        sees:"The sensitivity labels on every item Copilot referenced to ground a response.",
+        can:"Copilot and agents recognize and use sensitivity labels. Where a response draws on items of differing sensitivity, the label with the highest priority — typically the most restrictive — is the one surfaced and inherited, so protection carries into generated content rather than being lost at the point of creation.",
+        limits:"Where a label applies encryption, a user needs the EXTRACT usage right as well as VIEW for AI apps to return the data. Encryption applied WITHOUT a sensitivity label gives no automatic inheritance of protection for new items. S/MIME-protected email is never returned, and password-protected documents are inaccessible unless already open in the same app — passwords are not inherited by a destination item.",
+        status:"Generally available." } },
+
+
+    /* The link between IRM and DLP: risk level in, dynamic enforcement out. */
+    { id:"adaptive-protection", primary:true, license:["E5"], stage:4, col:0, cat:"enforce", status:"ga",
+      title:"Adaptive Protection", meta:"Insider risk level drives the strength of enforcement",
+      links:[ { text:"Help dynamically mitigate risks with Adaptive Protection", href:"https://learn.microsoft.com/purview/insider-risk-management-adaptive-protection" } ],
+      detail:{
+        sees:"Insider risk levels — Elevated, Moderate or Minor — assigned by Insider Risk Management machine-learning models from user activity and alert severity.",
+        can:"Dynamically applies the right strength of control to the right user: policy tips for Minor, blocking for Elevated, while low-risk users keep working unimpeded. Drives DLP policies, Data Lifecycle Management (Elevated-risk users' deleted SharePoint, OneDrive and Exchange content is preserved for 120 days), and Microsoft Entra Conditional Access. Risk levels update continuously, so enforcement follows the user's current risk rather than a static policy.",
+        limits:"For DLP, Adaptive Protection currently supports Exchange, Teams and Devices only. Insider Risk Management is unavailable in US Government clouds. Risk levels reset on a configurable timeframe (5–30 days, default 7) and expire when the related alert is dismissed or case resolved.",
+        status:"Generally available. Data Lifecycle Management and Conditional Access integration are in preview." } },
+
+    { id:"dlm-retention", primary:true, license:["E3","E5"], stage:4, col:0, cat:"enforce", status:"ga",
+      title:"Data Lifecycle Management", meta:"Retention",
+      links:[
+        { text:"Learn about Data Lifecycle Management", href:"https://learn.microsoft.com/purview/data-lifecycle-management" }
+      ],
+      detail:{
+        sees:"Content subject to retention.",
+        can:"Applies retention through Data Lifecycle Management. Retention policies cover Exchange, SharePoint, OneDrive, Teams, and Viva Engage; retention labels handle exceptions for individual items.",
+        limits:"None documented.",
+        status:"Generally available." } },
+
+    /* ---------- STAGE 5 · INSIGHTS (final destinations) ---------- */
+    /* DSPM is intentionally the FIRST/TOP item in Stage 5. */
+    { id:"dspm", primary:true, license:["E5"], stage:5, col:0, cat:"dest", status:"ga",
+      title:"DSPM", meta:"Data Security Posture Management and oversharing reports",
+      links:[ { text:"Learn about Data Security Posture Management", href:"https://learn.microsoft.com/purview/data-security-posture-management-learn-about" } ],
+      detail:{
+        sees:"Sensitive data across the estate, who can access it, how it is used, and whether it is adequately protected — correlated from DLP, Insider Risk Management, information protection and Data Security Investigations.",
+        can:"Surfaces oversharing and exposure risk, tracks posture over time, and turns findings into action — including data risk assessments that identify oversharing, and one-click policies to remediate it. Answers: what data do we have, where is it, who can access it, how is it protected.",
+        limits:"None documented.",
+        status:"Generally available." } },
+
+    { id:"activity-content-explorer", license:["E5"], stage:5, col:0, cat:"dest", status:"ga",
+      title:"Activity / Content Explorer", meta:"Where sensitive & labeled content lives",
+      links:[
+        { text:"Get started with activity explorer", href:"https://learn.microsoft.com/purview/data-classification-activity-explorer" },
+        { text:"Get started with content explorer", href:"https://learn.microsoft.com/purview/data-classification-content-explorer" }
+      ],
+      detail:{
+        sees:"Activity explorer: a historical view of activity on labeled content, sourced from the unified audit log. Content explorer: a current snapshot of items carrying a sensitivity label, a retention label, or a SIT match.",
+        can:"Surfaces where sensitive and labeled content lives and what happened to it.",
+        limits:"Activity explorer reports on up to 30 days of data and is not a real-time view — allow 60–90 minutes for core services. Encrypted sensitivity-labeled items do not surface in content explorer for SharePoint and OneDrive.",
+        status:"Generally available." } },
+
+    { id:"audit-log", license:["E3","E5"], stage:5, col:0, cat:"dest", status:"ga",
+      title:"Unified audit log", meta:"Prompts and responses captured",
+      links:[ { text:"Learn about auditing solutions", href:"https://learn.microsoft.com/purview/audit-solutions-overview" } ],
+      detail:{
+        sees:"Auditable events across the tenant, including Copilot prompts and responses.",
+        can:"Records prompts and responses in the unified audit log.",
+        limits:"Audit (Standard) retains records for 180 days; longer retention requires Audit (Premium) and, for 10 years, an add-on licence.",
+        status:"Generally available." } },
+
+    { id:"dlp-alerts", license:["E3","E5"], stage:5, col:0, cat:"dest", status:"ga",
+      title:"DLP alerts", meta:"Policy match alerts",
+      links:[ { text:"Get started with the DLP Alerts dashboard", href:"https://learn.microsoft.com/purview/dlp-alerts-dashboard-get-started" } ],
+      detail:{
+        sees:"DLP policy matches across Exchange, SharePoint, OneDrive, Teams chat and channels, Devices, instances, on-premises repositories, and Fabric/Power BI.",
+        can:"Raises alerts for policy violations and provides triage, investigation and shareable event links.",
+        limits:"Your audit log retention policy controls how long an alert stays visible in the console.",
+        status:"Generally available." } },
+
+    { id:"irm-alerts", license:["E5"], stage:5, col:0, cat:"dest", status:"ga",
+      title:"Insider Risk Management alerts", meta:"Risky-activity alerts",
+      caveat:"Additional IRM alerts can be raised outside of the classification, labeling and DLP context displayed here.",
+      links:[ { text:"Insider Risk Management", href:"https://learn.microsoft.com/purview/insider-risk-management-solution-overview" } ],
+      detail:{
+        sees:"Risky user activity signals correlated from Microsoft 365 and Microsoft Graph logs — in this diagram, the labeling and Adaptive Protection signals shown.",
+        can:"Identifies, triages and acts on potentially risky activity such as data leakage, IP theft and security violations. Users are pseudonymized by default, with role-based access controls and audit logs to protect user-level privacy.",
+        limits:"This diagram shows only the IRM alerts arising from the classification, labeling and DLP flows drawn here. IRM raises alerts from many other indicators and policy templates that are out of scope for this architecture.",
+        status:"Generally available." } }
+  ],
+
+  /* Connectors. from/to are node ids OR a group id (e.g. 'grp-classifiers'). */
+  edges: [
+    /* Stage 1 -> automatic classification (solid = in-transit) */
+    { from:"prompt",           to:"automatic-classification", kind:"solid" },
+    { from:"files",            to:"automatic-classification", kind:"solid" },
+    { from:"teams-messages",   to:"automatic-classification", kind:"solid" },
+    { from:"attached-files",   to:"automatic-classification", kind:"solid" },
+    { from:"device-files",     to:"automatic-classification", kind:"solid" },
+    { from:"emails",           to:"automatic-classification", kind:"solid" },
+    /* Files at rest -> on-demand scan (dashed) */
+    { from:"files",            to:"on-demand-classification", kind:"dashed" },
+    { from:"device-files",     to:"on-demand-classification", kind:"dashed" },
+    /* Triggers apply the classifier engines. These are NODE-level (not group-level)
+       so that a selected node's path only reaches the engines it genuinely uses. */
+    { from:"automatic-classification", to:"declarative-classifiers",  kind:"solid" },
+    { from:"automatic-classification", to:"edm",                      kind:"solid" },
+    { from:"automatic-classification", to:"named-entities",           kind:"solid" },
+    { from:"automatic-classification", to:"document-fingerprinting",  kind:"solid" },
+    { from:"automatic-classification", to:"trainable-classifiers",    kind:"solid" },
+    { from:"automatic-classification", to:"ai-classifiers",           kind:"solid" },
+    { from:"on-demand-classification", to:"declarative-classifiers",  kind:"dashed" },
+    { from:"on-demand-classification", to:"edm",                      kind:"dashed" },
+    { from:"on-demand-classification", to:"named-entities",           kind:"dashed" },
+    { from:"on-demand-classification", to:"document-fingerprinting",  kind:"dashed" },
+    { from:"on-demand-classification", to:"trainable-classifiers",    kind:"dashed" },
+    { from:"on-demand-classification", to:"ai-classifiers",           kind:"dashed" },
+    /* Classification informs auto-labeling — engine by engine.
+       NOT present, by design: document fingerprinting -> any labeling method;
+       AI classifiers -> client-side auto-labeling. */
+    { from:"declarative-classifiers", to:"client-side-auto-labeling",  kind:"solid" },
+    /* EDM feeds BOTH auto-labeling paths per Learn "Services that EDM supports". */
+    { from:"edm",                     to:"client-side-auto-labeling",  kind:"solid" },
+    { from:"edm",                     to:"service-side-auto-labeling", kind:"solid" },
+    /* Named entities: auto-labeling supported for SPO, ODB, Exchange transport, WAC/OWA. */
+    { from:"named-entities",          to:"service-side-auto-labeling", kind:"solid" },
+    { from:"named-entities",          to:"client-side-auto-labeling",  kind:"solid" },
+    { from:"declarative-classifiers", to:"service-side-auto-labeling", kind:"solid" },
+    { from:"trainable-classifiers",   to:"service-side-auto-labeling", kind:"solid" },
+    /* Learn documents a "Configuring trainable classifiers for a label" step under
+       client-side auto-labeling for Office apps, so this path exists. */
+    { from:"trainable-classifiers",   to:"client-side-auto-labeling",  kind:"solid" },
+    { from:"ai-classifiers",          to:"service-side-auto-labeling", kind:"solid" },
+    /* FEEDBACK: on-demand classification does NOT label, but service-side auto-labeling
+       then leverages the refreshed classifier results (explicit requirement). */
+    { from:"on-demand-classification", to:"service-side-auto-labeling", kind:"dashed" },
+    /* CLASSIFICATION path terminates at policy evaluation (content-based protection).
+       Every engine feeds DLP — including document fingerprinting, whose ONLY path this is. */
+    { from:"declarative-classifiers", to:"dlp-policy", kind:"solid", flow:"classification" },
+    /* Documented: DLP for Copilot acts on SITs detected in prompts (restrict processing,
+       block external web-search grounding), so SIT detection feeds the Copilot control too. */
+    { from:"declarative-classifiers", to:"dlp-copilot", kind:"solid", flow:"classification" },
+    { from:"edm",                     to:"dlp-policy", kind:"solid", flow:"classification" },
+    { from:"named-entities",          to:"dlp-policy",   kind:"solid", flow:"classification" },
+    { from:"document-fingerprinting", to:"dlp-policy", kind:"solid", flow:"classification" },
+    { from:"trainable-classifiers",   to:"dlp-policy", kind:"solid", flow:"classification" },
+    /* The auto-labeling-at-scale items are enhancements TO service-side auto-labeling —
+       its capacity, its policy management, its reporting. Without these edges the group
+       sits on the canvas disconnected, and selecting service-side auto-labeling never
+       reveals what is changing about it. They are terminal nodes, so they introduce no
+       transitive paths. Their connectors dash automatically because the targets are
+       public preview (statusMeta.dashEdges). */
+    { from:"service-side-auto-labeling", to:"autolabel-scale-capacity",  kind:"solid" },
+    { from:"service-side-auto-labeling", to:"autolabel-scalability",     kind:"solid" },
+    { from:"service-side-auto-labeling", to:"autolabel-coverage-report", kind:"solid" },
+    { from:"service-side-auto-labeling", to:"autolabel-library-default", kind:"solid" },
+    /* 559105 applies the LIBRARY's default label to files already at rest, so it is
+       also downstream of the library default label itself. */
+    { from:"default-library-label",      to:"autolabel-library-default", kind:"solid" },
+
+    /* Every labeling method produces a LABEL; the label is what protection acts on. */
+    { from:"manual-label",               to:"label-applied", kind:"solid", flow:"label" },
+    { from:"default-label",              to:"label-applied", kind:"solid", flow:"label" },
+    { from:"client-side-auto-labeling",  to:"label-applied", kind:"solid", flow:"label" },
+    { from:"default-library-label",      to:"label-applied", kind:"solid", flow:"label" },
+    { from:"service-side-auto-labeling", to:"label-applied", kind:"solid", flow:"label" },
+    /* Every labeling method emits an audited action. */
+    { from:"manual-label",               to:"label-activity", kind:"solid", flow:"label" },
+    { from:"default-label",              to:"label-activity", kind:"solid", flow:"label" },
+    { from:"client-side-auto-labeling",  to:"label-activity", kind:"solid", flow:"label" },
+    { from:"default-library-label",      to:"label-activity", kind:"solid", flow:"label" },
+    { from:"service-side-auto-labeling", to:"label-activity", kind:"solid", flow:"label" },
+    { from:"label-activity", to:"audit-log",                 kind:"dotted", flow:"label" },
+    { from:"label-activity", to:"activity-content-explorer", kind:"dotted", flow:"label" },
+
+    /* LABEL travels with the object and carries protection (intent-based). */
+    /* DLP acts on BOTH inputs: content classification (above) and the label itself.
+       The label edges start at "Sensitivity label applied", never at one method. */
+    { from:"label-applied", to:"dlp-policy",        kind:"solid", flow:"label" },
+    { from:"label-applied", to:"encryption",        kind:"solid", flow:"label" },
+    { from:"label-applied", to:"label-inheritance", kind:"solid", flow:"label" },
+    { from:"label-applied", to:"dlp-copilot",       kind:"solid", flow:"label" },
+    { from:"label-applied", to:"permissions",       kind:"solid", flow:"label" },
+    { from:"label-applied", to:"dlm-retention",     kind:"solid", flow:"label" },
+    /* Protection -> Insights. Dotted throughout: what reaches Stage 5 is a SIGNAL about
+       the item — an event, an alert, a label record — never the content itself. */
+    { from:"dlp-policy",   to:"dlp-alerts",                kind:"dotted" },
+    { from:"dlp-copilot",  to:"dlp-alerts",                kind:"dotted" },
+    { from:"dlp-policy",   to:"activity-content-explorer", kind:"dotted" },
+    { from:"dlp-policy",   to:"dspm",                      kind:"dotted" },
+    /* Copilot DLP reports to the same places as the other DLP location. Documented:
+       DLP rule matches from AI interactions surface in activity explorer's AI
+       activities tab and in DSPM — "Includes DLP for Microsoft 365 Copilot". */
+    { from:"dlp-copilot",  to:"activity-content-explorer", kind:"dotted" },
+    { from:"dlp-copilot",  to:"dspm",                      kind:"dotted" },
+    /* Who can access what IS the oversharing signal — DSPM's data risk assessments are
+       built on access and exposure, not only on DLP policy matches. */
+    { from:"permissions",  to:"dspm",                      kind:"dotted" },
+    { from:"encryption",   to:"audit-log",                 kind:"dotted", flow:"label" },
+    { from:"label-inheritance", to:"audit-log",            kind:"dotted", flow:"label" },
+    /* The unified audit log is the tenant-wide record: every enforcement control emits
+       to it, not just the label-bearing ones. DLP explicitly — "all DLP monitored
+       activities are recorded to the Microsoft 365 Audit log by default". The
+       "DLP conditions" node is deliberately absent: it is an explanatory note about how
+       policies are configured, not a control that generates events. */
+    { from:"dlp-policy",          to:"audit-log", kind:"dotted" },
+    { from:"dlp-copilot",         to:"audit-log", kind:"dotted" },
+    { from:"permissions",         to:"audit-log", kind:"dotted" },
+    { from:"dlm-retention",       to:"audit-log", kind:"dotted" },
+    { from:"adaptive-protection", to:"audit-log", kind:"dotted" },
+    /* Adaptive Protection also drives DLP and retention from the risk level. */
+    { from:"adaptive-protection", to:"dlp-policy",   kind:"solid" },
+    { from:"adaptive-protection", to:"dlm-retention", kind:"solid" },
+    { from:"label-activity",      to:"irm-alerts", kind:"dotted" },
+    { from:"adaptive-protection", to:"irm-alerts", kind:"dotted" },
+    { from:"dlm-retention",to:"activity-content-explorer", kind:"dotted" },
+  ],
+
+  /* Control layers. Drive the "Isolate layer" control: selecting one highlights every
+     node in the layer plus the content objects it covers (see `coverage` below). */
+  layers: [
+    { id:"label",       name:"Sensitivity label",                        nodes:["manual-label","default-label","client-side-auto-labeling","default-library-label","service-side-auto-labeling","label-applied","label-activity","label-inheritance","autolabel-scale-capacity","autolabel-scalability","autolabel-coverage-report","autolabel-library-default"] },
+    { id:"encryption",  name:"Encryption / usage rights",                nodes:["encryption"] },
+    { id:"sit",         name:"Sensitive information types",              nodes:["declarative-classifiers","edm","named-entities"] },
+    { id:"classifiers", name:"Classifiers (trainable / fingerprint / AI)", nodes:["declarative-classifiers","edm","named-entities","document-fingerprinting","trainable-classifiers","ai-classifiers"] },
+    { id:"dlp",         name:"DLP policy evaluation",                    nodes:["dlp-policy","dlp-copilot","adaptive-protection"] },
+    { id:"permissions", name:"Permissions / access",                    nodes:["permissions"] },
+    { id:"retention",   name:"Retention (DLM)",                         nodes:["dlm-retention"] },
+    { id:"audit",       name:"Audit & activity",                        nodes:["audit-log","activity-content-explorer"] }
+  ],
+
+  /* Content objects that the layers cut across (Stage 1). */
+  objects: [
+    { id:"prompt",           short:"Prompt" },
+    { id:"files",            short:"File" },
+    { id:"attached-files",   short:"File in transit" },
+    { id:"device-files",     short:"File on device" },
+    { id:"teams-messages",   short:"Teams msg" },
+    { id:"emails",           short:"Email" }
+  ],
+
+  /* Honest object x layer coverage (preserves the stated asymmetries). */
+  coverage: {
+    prompt:           ["sit","classifiers","dlp","audit"],
+    files:            ["label","encryption","sit","classifiers","dlp","permissions","retention","audit"],
+    "attached-files": ["label","encryption","sit","classifiers","dlp","permissions","retention","audit"],
+    "device-files":   ["label","encryption","sit","classifiers","dlp","permissions","audit"],
+    "teams-messages": ["sit","classifiers","dlp","retention","audit"],
+    emails:           ["label","encryption","sit","classifiers","dlp","permissions","retention","audit"]
+  },
+
+  /* Guided "Explain" scenarios: which nodes/edges light up + the panel copy. */
+  explains: {
+    e1: {
+      title:"Classification vs labels",
+      nodes:["automatic-classification","grp-classifiers","declarative-classifiers","edm","named-entities","document-fingerprinting","trainable-classifiers","ai-classifiers","dlp-policy","manual-label","default-label","client-side-auto-labeling","default-library-label","service-side-auto-labeling","label-applied","label-activity","encryption","label-inheritance","permissions","dlm-retention","audit-log","activity-content-explorer"],
+      flows:["classification","label"],
+      detail:{
+        sees:"Classification (detection) runs on the automatic trigger, invisibly, on every object.",
+        can:"A label is a decision stamped into the object's metadata — optional, durable, travels with the object, and carries the protection.",
+        limits:"Classification is a detection fact, not intent; it is not persisted on the object. See the flows: classification edges terminate at policy evaluation, while label edges travel with the object all the way to Stage 5.",
+        status:"Classification is always happening on the automatic trigger; labeling is a separate, durable decision." }
+    },
+    e2: {
+      title:"When is information classified?",
+      nodes:["automatic-classification","on-demand-classification","grp-classifiers","declarative-classifiers","edm","named-entities","document-fingerprinting","trainable-classifiers","ai-classifiers"],
+      flows:[],
+      detail:{
+        sees:"Two triggers determine WHEN classification happens.",
+        can:"Automatic: content is classified when it is created, uploaded, or modified (in-transit). On-demand: an admin-initiated scan classifies data at rest.",
+        limits:"On-demand classification classifies but does not apply labels, and is billed pay-as-you-go (not E5-inclusive).",
+        status:"Both triggers are generally available." }
+    },
+    e3: {
+      title:"How is information protected?",
+      nodes:["grp-classifiers","declarative-classifiers","edm","named-entities","document-fingerprinting","trainable-classifiers","ai-classifiers","dlp-policy","dlp-copilot","manual-label","default-label","service-side-auto-labeling","encryption","label-inheritance","permissions","dlm-retention"],
+      flows:["classification","label"],
+      detail:{
+        sees:"Two enforcement routes, and they compound.",
+        can:"Content-based: classification → DLP acts on what the content IS. Intent-based: a label → DLP, encryption and access act on the user's stated intent. Both arrive at the same DLP evaluation, and a single rule can use either or both.",
+        limits:"Neither route replaces the other — a labeled file evaluated by DLP is protected by both at once. But the conditions available differ by location: Teams messages can be matched on SITs only, and the Microsoft 365 Copilot location on labels only.",
+        status:"Both routes are generally available across the listed workloads." }
+    }
+  }
+};
+
+/* ============================================================================
+   LAYOUT ENGINE — computes every coordinate from ARCHITECTURE (no fixed x/y).
+   ============================================================================ */
+const GUTTER=32, NODE_W=260, NODE_GAP=18, COL_GAP=30, STAGE_GAP=64;
+/* STAGE_LABEL_H leaves room for the stage label, the question line, and the
+   plain-language description beneath it. */
+const STAGE_LABEL_H=70, GROUP_LABEL_H=24, LANE_GAP=15;
+
+const nodeById = {};
+ARCHITECTURE.nodes.forEach(n => nodeById[n.id] = n);
+const groupById = {};
+ARCHITECTURE.groups.forEach(g => groupById[g.id] = g);
+const nodeGroup = {}; /* node id -> group id */
+ARCHITECTURE.groups.forEach(g => g.nodeIds.forEach(id => nodeGroup[id] = g.id));
+
+/* Availability model. Behaviour is DATA, not code:
+     badge      - show the status badge on the card and in the detail head
+     dashEdges  - draw this node's connectors dashed ("not yet GA")
+     showDates  - surface the availability line in the detail panel
+     legend     - list this status in the legend
+   To make public preview unbadged, or to add a new status, edit only this map. */
+const statusMeta = {
+  "ga":              { label:"GA",               cls:"st-ga",      badge:false, dashEdges:false, showDates:false, legend:false },
+  "public-preview":  { label:"PUBLIC PREVIEW",   cls:"st-pp",      badge:true,  dashEdges:true,  showDates:true,  legend:true, legendText:"Public preview" },
+  "public-roadmap":  { label:"PUBLIC ROADMAP",   cls:"st-pr",      badge:true,  dashEdges:true,  showDates:true,  legend:true, legendText:"On the roadmap" },
+  "private-preview": { label:"PRIVATE PREVIEW ⚠", cls:"st-priv",   badge:true,  dashEdges:true,  showDates:true,  legend:false },
+  "unknown":         { label:"UNKNOWN",          cls:"st-unknown", badge:true,  dashEdges:false, showDates:true,  legend:false },
+  "na":              null
+};
+/* Helper: read a behaviour flag for a node's status, defaulting to false. */
+function statusFlag(status, flag){
+  const m = statusMeta[status||"na"];
+  return !!(m && m[flag]);
+}
+
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+/* Buttons whose label changes at runtime must keep BOTH the full and the short
+   label, so the toolbar's narrow-width swap keeps working. Never set .textContent
+   on these — use this helper. */
+function setBtnLabel(btn, full, min){
+  if (!btn) return;
+  btn.innerHTML = '<span class="t-full">'+esc(full)+'</span><span class="t-min">'+esc(min||full)+'</span>';
+}
+
+/* Build the inner HTML of a node card (used for measuring AND for rendering). */
+function nodeCardHTML(n){
+  let h = '<div class="node cat-'+n.cat+(n.primary?" primary":"")+'" tabindex="0" role="button" data-id="'+n.id+'" '+
+          'data-status="'+(n.status||"na")+'" aria-label="'+esc(n.title)+'">';
+  h += '<div class="node-title">'+esc(n.title)+'</div>';
+  if (n.cat === "note" && n.noteBody){
+    h += '<div class="note-body">'+esc(n.noteBody)+'</div>';
+  }
+  if (n.meta)  h += '<div class="node-meta">'+esc(n.meta)+'</div>';
+  if (n.caveat) h += '<div class="node-caveat">'+esc(n.caveat)+'</div>';
+  /* Licence tag(s) from node.license — data-driven, see LICENSES. */
+  if (n.license && n.license.length){
+    h += '<div class="lic-row">';
+    n.license.forEach(l => h += '<span class="lic">'+esc(l)+'</span>');
+    h += '</div>';
+  }
+  if (n.bullets && n.bullets.length){
+    h += '<ul class="node-bul">';
+    n.bullets.forEach(b => h += '<li>'+esc(b)+'</li>');
+    h += '</ul>';
+  }
+  if (n.links && n.links.length){
+    h += '<div class="node-links">';
+    n.links.forEach(l => {
+      if (l.href) h += '<a href="'+esc(l.href)+'" target="_blank" rel="noopener">'+esc(l.text)+' ↗</a>';
+      else        h += '<span class="tbd">'+esc(l.text)+'</span>';
+    });
+    h += '</div>';
+  }
+  const sm = statusMeta[n.status||"na"];
+  // Whether a badge shows is a DATA decision — see statusMeta[].badge.
+  if (sm && statusFlag(n.status,"badge")) h += '<div class="badges"><span class="badge '+sm.cls+'">'+sm.label+'</span></div>';
+  h += '</div>';
+  return h;
+}
+
+/* Pass 1: measure natural heights at the fixed node width. */
+function measureHeights(){
+  const meas = document.getElementById("measure");
+  const heights = {};
+  ARCHITECTURE.nodes.forEach(n => {
+    meas.innerHTML = nodeCardHTML(n);
+    heights[n.id] = meas.firstElementChild.offsetHeight;
+  });
+  meas.innerHTML = "";
+  return heights;
+}
+
+/* Pass 2: assign columns, x per column, y stacking per node. */
+function computeLayout(){
+  const heights = measureHeights();
+
+  /* Build ordered list of (stage,col) columns. */
+  const colKey = n => n.stage + ":" + (n.col||0);
+  const seen = {};
+  const columns = [];
+  ARCHITECTURE.stages.forEach(s => {
+    /* distinct cols within this stage, in numeric order */
+    const cols = [];
+    ARCHITECTURE.nodes.filter(n => n.stage===s.n).forEach(n => {
+      const c = n.col||0; if (cols.indexOf(c)<0) cols.push(c);
+    });
+    cols.sort((a,b)=>a-b).forEach(c => {
+      const key = s.n+":"+c;
+      if (seen[key]) return; seen[key]=true;
+      columns.push({ stage:s.n, col:c, key,
+        nodes: ARCHITECTURE.nodes.filter(n => n.stage===s.n && (n.col||0)===c) });
+    });
+  });
+
+  /* x per column: bigger gap when the stage changes. */
+  let x = GUTTER, prevStage = null;
+  columns.forEach((column, i) => {
+    if (i>0) x += NODE_W + (column.stage===prevStage ? COL_GAP : STAGE_GAP);
+    column.x = x; prevStage = column.stage;
+  });
+
+  /* Stack nodes within each column.
+     A group box is drawn GROUP_LABEL_H above its first member to make room for its
+     title. That room has to exist in the STACK, not just in the drawing: wherever a
+     group STARTS — at the top of a column or part-way down it — the node flow must
+     open up by GROUP_LABEL_H, plus the box's own 12px padding. Without this the box
+     top and its title ride up into whatever sits above (the bug: NODE_GAP 18 minus
+     GROUP_LABEL_H 24 = 6px of overlap). The same applies when a group ENDS: the box
+     extends 12px below its last member, so the next node must clear that too. */
+  const layout = {}; /* id -> {x,y,w,h,colIndex,stage,cat} */
+  const GROUP_PAD = 12;
+  let maxBottom = 0;
+  columns.forEach((column, ci) => {
+    let y = STAGE_LABEL_H;
+    let prevGroup = null;
+    column.nodes.forEach(n => {
+      const g = nodeGroup[n.id] || null;
+      /* entering a group (from nothing, or straight from another group) */
+      if (g && g !== prevGroup) y += GROUP_LABEL_H + GROUP_PAD;
+      /* leaving a group into an ungrouped node */
+      else if (!g && prevGroup) y += GROUP_PAD;
+      const h = heights[n.id];
+      layout[n.id] = { x:column.x, y, w:NODE_W, h, colIndex:ci, stage:n.stage, cat:n.cat };
+      y += h + NODE_GAP;
+      prevGroup = g;
+    });
+    /* if the column ends inside a group, leave room for the box's bottom padding */
+    if (prevGroup) y += GROUP_PAD;
+    maxBottom = Math.max(maxBottom, y - NODE_GAP);
+  });
+
+  /* Group boxes: bounding box around their member nodes. */
+  const groups = {};
+  ARCHITECTURE.groups.forEach(g => {
+    const rects = g.nodeIds.map(id => layout[id]).filter(Boolean);
+    const minX = Math.min(...rects.map(r=>r.x));
+    const minY = Math.min(...rects.map(r=>r.y));
+    const maxX = Math.max(...rects.map(r=>r.x+r.w));
+    const maxY = Math.max(...rects.map(r=>r.y+r.h));
+    const pad = 12;
+    groups[g.id] = {
+      x:minX-pad, y:minY-GROUP_LABEL_H, w:(maxX-minX)+pad*2,
+      h:(maxY-minY)+GROUP_LABEL_H+pad, label:g.label,
+      colIndex:layout[g.nodeIds[0]].colIndex
+    };
+  });
+
+  /* Stage label bands (x extent per stage). */
+  const stageBands = ARCHITECTURE.stages.map(s => {
+    const cols = columns.filter(c => c.stage===s.n);
+    const xs = cols.map(c => c.x);
+    return { n:s.n, label:s.label, q:s.q, d:s.d, x:Math.min(...xs), w:(Math.max(...xs)+NODE_W) - Math.min(...xs) };
+  });
+
+  const totalW = columns[columns.length-1].x + NODE_W + GUTTER;
+  return { layout, groups, stageBands, columns, maxBottom, totalW };
+}
+
+/* Anchor helpers (a node id or a group id both resolve to a rect). */
+function rectOf(id, L){ return L.layout[id] || L.groups[id]; }
+function cx(r){ return r.x + r.w/2; }
+function cy(r){ return r.y + r.h/2; }
+function colIndexOf(id, L){ const r = rectOf(id,L); return r.colIndex; }
+
+/* Build one orthogonal connector path. Adjacent columns => elbow; farther apart
+   (or explicit channel) => route through a lane below the node area. */
+function buildEdgePath(e, L, laneState){
+  const s = rectOf(e.from, L), t = rectOf(e.to, L);
+  const di = Math.abs(colIndexOf(e.to,L) - colIndexOf(e.from,L));
+  const forward = colIndexOf(e.to,L) >= colIndexOf(e.from,L);
+
+  /* SAME COLUMN: the generic elbow would fold back through the cards, because the
+     source's right edge and the target's left edge are the same column. Instead, step
+     out into the gutter just right of the column, run vertically, and come back into
+     the target's RIGHT edge. Everything converging on one target shares that vertical
+     trunk, so five feeds draw as one line with five short spurs. */
+  if (di === 0 && s !== t){
+    const railX = s.x + s.w + 14;
+    const sx = s.x + s.w, sy = cy(s);
+    const tx = t.x + t.w, ty = cy(t);
+    return "M "+sx+" "+sy+" H "+railX+" V "+ty+" H "+tx;
+  }
+
+  if (di <= 1 && forward){
+    /* Elbow: source right-center -> midX -> target left-center. */
+    const sx = s.x + s.w, sy = cy(s);
+    const tx = t.x,        ty = cy(t);
+    const midX = sx + (tx - sx)/2;
+    return "M "+sx+" "+sy+" H "+midX+" V "+ty+" H "+tx;
+  }
+  /* Channel route: down to a lane, across, up into the target top.
+     Lanes are keyed by DESTINATION column, so every long edge heading into the same
+     column shares ONE horizontal line — the channel becomes a couple of buses rather
+     than a stack of parallel rules. Overlapping spans are the point: the shared run
+     draws as a single line, and the edges diverge only at the vertical drop. */
+  const key = "to:"+colIndexOf(e.to,L);
+  if (laneState.byKey[key] === undefined){ laneState.byKey[key] = laneState.count++; }
+  const lane = laneState.byKey[key];
+  const laneY = L.maxBottom + 22 + lane*LANE_GAP;
+  const sx = cx(s), sBottom = s.y + s.h;
+  /* Enter the target at its BOTTOM edge, not its top. The lane sits below every node,
+     so routing up to the top edge would drive the final segment straight through the
+     box — the line hidden behind the card and the arrowhead stranded on the far side. */
+  const tx = cx(t), tBottom = t.y + t.h;
+  return "M "+sx+" "+sBottom+" V "+laneY+" H "+tx+" V "+tBottom;
+}
+
+/* ============================================================================
+   RENDER
+   ============================================================================ */
+let L, edgeIndex = [];
+function render(){
+  L = computeLayout();
+  const laneState = { count:0, byKey:{} };
+  const parts = [];
+
+  /* Pre-compute edge paths so we know how many lanes the channel needs. */
+  edgeIndex = ARCHITECTURE.edges.map((e, i) => {
+    const d = buildEdgePath(e, L, laneState);
+    return { e, i, d, id:"edge-"+i };
+  });
+  const svgH = L.maxBottom + 22 + laneState.count*LANE_GAP + 22;
+
+  parts.push('<svg class="diagram" width="'+L.totalW+'" height="'+svgH+'" viewBox="0 0 '+L.totalW+' '+svgH+'" role="img" aria-label="Purview classification and labeling reference architecture">');
+
+  /* Arrowhead markers (ingress only). Neutral + active(accent) variants. */
+  parts.push(
+    '<defs>'+
+      '<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">'+
+        '<path d="M0,0 L10,5 L0,10 z" fill="var(--edge)"/></marker>'+
+      '<marker id="arrow-active" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">'+
+        '<path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker>'+
+    '</defs>');
+
+  /* Stage labels + hairline separators. */
+  /* Stage washes sit UNDER everything: a light tint per stage plus a 3px cap rule in
+     that stage's hue. Nodes themselves stay neutral. */
+  parts.push('<g id="stage-bands">');
+  L.stageBands.forEach(b => {
+    const pad = STAGE_GAP/2 - 6;
+    const bx = b.x - pad, bw = b.w + pad*2;
+    parts.push('<g class="st-'+b.n+'" id="stage-band-'+b.n+'">');
+    parts.push('<rect class="stage-wash" x="'+bx+'" y="6" width="'+bw+'" height="'+(svgH-12)+'" rx="10"/>');
+    parts.push('<line class="stage-cap" x1="'+bx+'" y1="7" x2="'+(bx+bw)+'" y2="7"/>');
+    parts.push('</g>');
+  });
+  parts.push('</g>');
+
+  parts.push('<g id="stage-labels">');
+  L.stageBands.forEach((b, i) => {
+    parts.push('<text class="stage-label" x="'+b.x+'" y="26">'+esc(b.label)+'</text>');
+    if (b.q) parts.push('<text class="stage-q" x="'+b.x+'" y="42">'+esc(b.q)+'</text>');
+    if (b.d) parts.push('<text class="stage-d" x="'+b.x+'" y="58">'+esc(b.d)+'</text>');
+    /* No vertical stage rules: the stage wash already separates the columns, and two
+       separators doing the same job is noise. */
+  });
+  parts.push('</g>');
+
+  /* Group boxes (behind nodes). */
+  parts.push('<g id="groups">');
+  Object.keys(L.groups).forEach(gid => {
+    const g = L.groups[gid];
+    parts.push('<g class="g-box" id="group-'+gid+'">');
+    parts.push('<rect class="group-box" x="'+g.x+'" y="'+g.y+'" width="'+g.w+'" height="'+g.h+'" rx="8"/>');
+    /* Group titles are SVG text: they neither wrap nor clip, so a long label bleeds
+       past the box and into the next column. textLength + lengthAdjust condenses the
+       glyphs to fit the box instead, which keeps the label readable and the gutter clean.
+       Only applied when the label would actually overflow. */
+    const titleMax = g.w - 24;
+    const titleEst = g.label.length * 11 * 0.62;
+    const fitAttr  = titleEst > titleMax
+      ? ' textLength="'+titleMax+'" lengthAdjust="spacingAndGlyphs"' : '';
+    parts.push('<text class="group-title" x="'+(g.x+12)+'" y="'+(g.y+16)+'"'+fitAttr+'>'+esc(g.label)+'</text>');
+    parts.push('</g>');
+  });
+  parts.push('</g>');
+
+  /* Edges (drawn under nodes). */
+  parts.push('<g id="edges">');
+  edgeIndex.forEach(rec => {
+    const e = rec.e;
+    /* Dashed-for-non-GA is derived from node status, never hand-marked on the edge,
+       so it stays correct automatically when a capability moves to GA. */
+    /* Dash-for-non-GA is derived from statusMeta[].dashEdges, never hand-marked. */
+    const nonGA = [e.from, e.to].some(id => {
+      const n = nodeById[id];
+      return !!(n && statusFlag(n.status,"dashEdges"));
+    });
+    const cls = "edge " + (e.kind||"solid") + (nonGA ? " nonga" : "") + (e.flow ? " flow-"+e.flow : "");
+    parts.push('<path id="'+rec.id+'" class="'+cls+'" data-from="'+e.from+'" data-to="'+e.to+'" '+
+               (e.flow?('data-flow="'+e.flow+'" '):'')+
+               'd="'+rec.d+'" marker-end="url(#arrow)"><title>'+esc(edgeTitle(e))+'</title></path>');
+  });
+  parts.push('</g>');
+
+  /* Nodes: semantic <g id="node-..." data-status data-stage> + <foreignObject> card. */
+  parts.push('<g id="nodes">');
+  ARCHITECTURE.nodes.forEach(n => {
+    const r = L.layout[n.id];
+    parts.push('<g class="n-group" id="node-'+n.id+'" data-status="'+(n.status||"na")+'" data-stage="'+n.stage+'">');
+    parts.push('<title>'+esc(n.title)+'</title>');
+    parts.push('<foreignObject x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+(r.h+2)+'">');
+    parts.push('<div xmlns="http://www.w3.org/1999/xhtml">'+nodeCardHTML(n)+'</div>');
+    parts.push('</foreignObject>');
+    parts.push('</g>');
+  });
+  parts.push('</g>');
+
+  parts.push('</svg>');
+  document.getElementById("canvas-scroll").innerHTML = parts.join("");
+  wireNodes();
+}
+
+function isPrivate(id){ const n = nodeById[id]; return !!(n && n.status==="private-preview"); }
+function edgeTitle(e){
+  const ek = EDGE_KINDS[e.kind||"solid"] || EDGE_KINDS.solid;
+  const kind = ek.tooltip;
+  return (nodeById[e.from]?nodeById[e.from].title:e.from) + " → " +
+         (nodeById[e.to]?nodeById[e.to].title:e.to) + " (" + kind + (e.flow?", "+e.flow:"") + ")";
+}
+
+/* ============================================================================
+   INTERACTION
+   ============================================================================ */
+let currentLayer = "";
+let currentLicense = "";
+
+/* Directed adjacency including group<->member links so paths traverse groups. */
+function buildAdjacency(){
+  const fwd = {}, bwd = {};
+  const add = (m,a,b) => { (m[a]=m[a]||[]).push(b); };
+  ARCHITECTURE.edges.forEach(e => { add(fwd,e.from,e.to); add(bwd,e.to,e.from); });
+  /* member <-> group links ONLY for groups that actually carry an edge. A group with
+     no edges of its own must not act as a hub, or selecting one member would wrongly
+     drag in every sibling (e.g. service-side auto-labeling pulling in fingerprinting). */
+  const groupsWithEdges = new Set();
+  ARCHITECTURE.edges.forEach(e => { groupsWithEdges.add(e.from); groupsWithEdges.add(e.to); });
+  ARCHITECTURE.groups.forEach(g => {
+    if (!groupsWithEdges.has(g.id)) return;
+    g.nodeIds.forEach(id => {
+      add(fwd,id,g.id); add(bwd,g.id,id); add(fwd,g.id,id); add(bwd,id,g.id);
+    });
+  });
+  return { fwd, bwd };
+}
+const ADJ = buildAdjacency();
+
+function reachable(start, map){
+  const out = new Set(), stack=[start];
+  while(stack.length){
+    const cur = stack.pop();
+    (map[cur]||[]).forEach(nx => { if(!out.has(nx)){ out.add(nx); stack.push(nx); } });
+  }
+  return out;
+}
+
+function clearHighlight(){
+  document.querySelectorAll(".n-group, .edge, .g-box").forEach(el => el.classList.remove("dim"));
+  document.querySelectorAll(".node.selected").forEach(el => el.classList.remove("selected"));
+  document.querySelectorAll(".edge.active").forEach(el => { el.classList.remove("active"); el.setAttribute("marker-end","url(#arrow)"); });
+}
+
+/* Highlight a set of node ids (+ optional active flow tags) and dim the rest. */
+function highlightSet(nodeIds, activeFlows){
+  clearHighlight();
+  const keep = new Set(nodeIds);
+  /* include group ids whose members are kept */
+  ARCHITECTURE.groups.forEach(g => { if (g.nodeIds.some(id => keep.has(id))) keep.add(g.id); });
+
+  document.querySelectorAll(".n-group").forEach(g => {
+    const id = g.id.replace(/^node-/,"");
+    if (!keep.has(id)) g.classList.add("dim");
+  });
+  /* Group boxes dim with their members — otherwise an unrelated group stays at full
+     opacity while everything inside it fades, which reads as a rendering fault. */
+  document.querySelectorAll(".g-box").forEach(b => {
+    const gid = b.id.replace(/^group-/,"");
+    if (!keep.has(gid)) b.classList.add("dim");
+  });
+  edgeIndex.forEach(rec => {
+    const path = document.getElementById(rec.id);
+    const inPath = keep.has(rec.e.from) && keep.has(rec.e.to);
+    if (!inPath){ path.classList.add("dim"); return; }
+    const flowActive = activeFlows && rec.e.flow && activeFlows.indexOf(rec.e.flow)>=0;
+    if (flowActive){ path.classList.add("active"); path.setAttribute("marker-end","url(#arrow-active)"); }
+  });
+}
+
+/* Some capabilities apply only to certain content objects. Declare that in the node's
+   `scope.objects` (Stage 1 ids) and the highlighted path is trimmed to match — e.g.
+   service-side auto-labeling covers files and email, never Teams messages. Edit the
+   data, not this function. */
+function applyScope(id, keep){
+  const n = nodeById[id];
+  if (!n) return keep;
+
+  /* Selecting a CAPABILITY: trim the content objects it doesn't apply to.
+     `scope.objects`     = a positive list (applies ONLY to these).
+     `scope.excludeObjects` = a negative list (applies to all EXCEPT these) — used where
+     the only verified fact is an exclusion, so the diagram never implies coverage that
+     hasn't been confirmed. */
+  if (n.scope && n.scope.objects){
+    const allowed = new Set(n.scope.objects);
+    ARCHITECTURE.objects.forEach(o => { if (!allowed.has(o.id)) keep.delete(o.id); });
+  }
+  if (n.scope && n.scope.excludeObjects){
+    n.scope.excludeObjects.forEach(oid => keep.delete(oid));
+  }
+
+  /* `scope.excludeNodes` — capability-to-capability exclusions. Individual edges can
+     each be true while the COMPOSITE path they form is false: on-demand classification
+     legitimately feeds the classifier engines, and those engines legitimately feed
+     client-side auto-labeling, but an admin-initiated scan of data at rest can never
+     trigger labeling inside an Office app. The edges stay correct; traversal stops
+     claiming the chain. Applied in BOTH directions, like excludeObjects. */
+  if (n.scope && n.scope.excludeNodes){
+    n.scope.excludeNodes.forEach(nid => keep.delete(nid));
+  }
+  ARCHITECTURE.nodes.forEach(m => {
+    if (m.scope && m.scope.excludeNodes && m.scope.excludeNodes.indexOf(id) >= 0) keep.delete(m.id);
+  });
+
+  /* Cohesive groups: peers that shipped together. Selecting one brings in the rest,
+     so the set is visible as a set — without inventing flow arrows between them. */
+  ARCHITECTURE.groups.forEach(g => {
+    if (!g.cohesive) return;
+    if (g.nodeIds.indexOf(id) >= 0) g.nodeIds.forEach(m => keep.add(m));
+  });
+
+  /* Selecting a CONTENT OBJECT: the mirror case — drop every capability whose scope
+     excludes it. Without this, a prompt would light up the labeling methods simply
+     because they share an upstream classifier. */
+  if (ARCHITECTURE.objects.some(o => o.id===id)){
+    ARCHITECTURE.nodes.forEach(m => {
+      if (!m.scope) return;
+      if (m.scope.objects && m.scope.objects.indexOf(id) < 0) keep.delete(m.id);
+      if (m.scope.excludeObjects && m.scope.excludeObjects.indexOf(id) >= 0) keep.delete(m.id);
+    });
+  }
+  return keep;
+}
+
+function selectNode(id){
+  const down = reachable(id, ADJ.fwd);
+  const up   = reachable(id, ADJ.bwd);
+  let keep = new Set([id, ...down, ...up]);
+  keep = applyScope(id, keep);
+  highlightSet([...keep], null);
+  const card = document.querySelector('.node[data-id="'+id+'"]');
+  if (card) card.classList.add("selected");
+  /* A direct selection supersedes either isolation lens. */
+  currentLayer = ""; currentLicense = "";
+  setLayerSelect(""); setLicenseSelect("");
+  showDetail(nodeById[id]);
+}
+
+function runExplain(key){
+  clearHighlight();
+  const ex = ARCHITECTURE.explains[key];
+  highlightSet(ex.nodes, ex.flows);
+  showDetailRaw(ex.title, "Explain", ex.detail, null);
+  setLayerSelect("");
+  setLicenseSelect("");
+  currentLicense = "";
+}
+
+function isolateLayer(layerId){
+  currentLayer = layerId;
+  if (!layerId){ resetSelection(); return; }
+  currentLicense = "";
+  setLicenseSelect("");
+  const layer = ARCHITECTURE.layers.find(l => l.id===layerId);
+  const objs = ARCHITECTURE.objects.filter(o => (ARCHITECTURE.coverage[o.id]||[]).indexOf(layerId)>=0).map(o=>o.id);
+  const keep = [...objs, ...layer.nodes];
+  highlightSet(keep, null);
+  const covered = objs.map(id => ARCHITECTURE.objects.find(o=>o.id===id).short).join(", ") || COPY.relations.none;
+  const nodeNames = layer.nodes.map(id=>nodeById[id].title).join("; ");
+  const T = COPY.layerIsolate;
+  const fill = str => str.replace("{layer}", layer.name).replace("{objects}", covered).replace("{nodes}", nodeNames);
+  showDetailRaw(layer.name, T.kicker, {
+    sees:  fill(T.sees),
+    can:   fill(T.can),
+    limits:fill(T.limits),
+    status:fill(T.implementedBy)
+  }, null);
+}
+
+function licensedNodes(lens){
+  return ARCHITECTURE.nodes.filter(n => {
+    const lic = n.license || [];
+    if (!lic.length) return false;
+    if (!lens.includes.every(v => lic.indexOf(v) >= 0)) return false;
+    return !lens.excludes.some(v => lic.indexOf(v) >= 0);
+  }).map(n => n.id);
+}
+
+function isolateLicense(lensId){
+  currentLicense = lensId;
+  if (!lensId){ resetSelection(); return; }
+  setLayerSelect("");
+  currentLayer = "";
+  const lens = LICENSE_LENSES.find(l => l.id === lensId);
+  const hits = licensedNodes(lens);
+  const total = ARCHITECTURE.nodes.filter(n => (n.license||[]).length).length;
+  /* Content objects aren't licensable items, so they stay lit as context. */
+  const objIds = ARCHITECTURE.objects.map(o => o.id);
+  highlightSet([...hits, ...objIds], null);
+  const names = hits.map(id => nodeById[id].title).join("; ") || COPY.relations.none;
+  const T = COPY.licenseIsolate;
+  const fill = str => str.replace("{lens}", lens.name)
+                        .replace("{count}", String(hits.length))
+                        .replace("{total}", String(total))
+                        .replace("{nodes}", names);
+  showDetailRaw(lens.name, T.kicker, {
+    sees:  fill(T.sees),
+    can:   fill(T.can),
+    limits:fill(T.limits),
+    status:fill(T.implementedBy)
+  }, null);
+}
+
+function resetSelection(){
+  clearHighlight();
+  currentLayer = "";
+  currentLicense = "";
+  setLayerSelect("");
+  setLicenseSelect("");
+  showEmptyDetail();
+}
+
+function fullOverview(){
+  resetSelection();
+  document.getElementById("canvas-scroll").scrollLeft = 0;
+}
+
+/* ---------- Detail panel ---------- */
+/* Three sections, not four. "Status" was dropped: GA is implicit and any non-GA state is
+   already carried by the badge — the availability facts that matter (preview/GA dates)
+   are surfaced by availabilityHTML() instead, so nothing factual is lost.
+   "What it can't do" replaces "Limitations": plainer, and it reads as a real answer
+   rather than a disclaimer. */
+function detailSectionsHTML(d){
+  const H = COPY.detailHeadings, F = COPY.detailFallback;
+  return '<div class="grid grid-3">'+
+    '<section><h4>'+esc(H.sees)+'</h4><p>'+esc(d.sees||F.unknown)+'</p></section>'+
+    '<section><h4>'+esc(H.can)+'</h4><p>'+esc(d.can||F.unknown)+'</p></section>'+
+    '<section><h4>'+esc(H.limits)+'</h4><p>'+esc(d.limits||F.none)+'</p></section>'+
+  '</div>';
+}
+
+/* Availability line: shown only when a node is NOT generally available, so preview and
+   roadmap dates survive the removal of the Status column without adding noise to GA nodes. */
+function availabilityHTML(n){
+  if (!n || !n.detail || !statusFlag(n.status,"showDates")) return "";
+  return '<p class="availability">'+esc(n.detail.status)+'</p>';
+}
+function linksHTML(links){
+  if (!links || !links.length) return "";
+  let h = '<div class="detail-links">';
+  links.forEach(l => { if (l.href) h += '<a href="'+esc(l.href)+'" target="_blank" rel="noopener">'+esc(l.text)+' ↗</a>'; });
+  h += '</div>';
+  return h;
+}
+/* Relationships are SHOWN, not described: direct neighbours and the content objects a
+   capability applies to are rendered as clickable chips, derived from ARCHITECTURE.edges
+   and node.scope. Nothing here is authored by hand, so it cannot drift from the diagram. */
+function relationHTML(n){
+  const titleOf = id => (nodeById[id] ? nodeById[id].title : id);
+  const from = ARCHITECTURE.edges.filter(e => e.to===n.id && nodeById[e.from]).map(e => e.from);
+  const into = ARCHITECTURE.edges.filter(e => e.from===n.id && nodeById[e.to]).map(e => e.to);
+  const objIds = n.scope && n.scope.objects ? n.scope.objects
+               : (ARCHITECTURE.objects.some(o=>o.id===n.id) ? null : null);
+  const chips = (ids, cls) => ids.length
+    ? ids.map(id => '<button class="chip'+(cls||"")+'" data-jump="'+id+'" type="button">'+esc(titleOf(id))+'</button>').join("")
+    : '<span class="chip none">'+esc(COPY.relations.none)+'</span>';
+  let h = '<div class="rel">';
+  const R = COPY.relations;
+  h += '<div class="rel-group"><span class="rel-label">'+esc(R.from)+'</span>'+chips(from)+'</div>';
+  h += '<div class="rel-group"><span class="rel-label">'+esc(R.into)+'</span>'+chips(into)+'</div>';
+  if (objIds){
+    h += '<div class="rel-group"><span class="rel-label">'+esc(R.applies)+'</span>'+
+         objIds.map(id => '<span class="chip static">'+esc(titleOf(id))+'</span>').join("")+'</div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+function showDetail(n){
+  const sm = statusMeta[n.status||"na"];
+  const badge = (sm && statusFlag(n.status,"badge")) ? ' <span class="badge '+sm.cls+'">'+sm.label+'</span>' : '';
+  document.getElementById("detail").innerHTML =
+    '<div class="detail-head"><span class="detail-kicker">Stage '+n.stage+'</span>'+
+    '<span class="detail-title">'+esc(n.title)+'</span>'+badge+'</div>'+
+    detailSectionsHTML(n.detail)+availabilityHTML(n)+relationHTML(n)+linksHTML(n.links);
+  document.querySelectorAll("#detail .chip[data-jump]").forEach(c => {
+    c.addEventListener("click", () => selectNode(c.dataset.jump));
+  });
+}
+function showDetailRaw(title, kicker, d, links){
+  document.getElementById("detail").innerHTML =
+    '<div class="detail-head"><span class="detail-kicker">'+esc(kicker)+'</span>'+
+    '<span class="detail-title">'+esc(title)+'</span></div>'+
+    detailSectionsHTML(d)+linksHTML(links);
+}
+function showEmptyDetail(){
+  const E = COPY.emptyState;
+  document.getElementById("detail").innerHTML =
+    '<div class="detail-head"><span class="detail-kicker">'+esc(E.kicker)+'</span>'+
+    '<span class="detail-title">'+esc(E.title)+'</span></div>'+
+    detailSectionsHTML({ sees:E.sees, can:E.can, limits:E.limits }, null);
+}
+
+
+
+/* ---------- Scope note + legend, rendered from COPY / EDGE_KINDS / statusMeta ----------
+   Both were literal markup; generating them means product wording and availability
+   rules live in exactly one place and can't drift from what the diagram draws. */
+function renderScopeNote(){
+  const C = COPY.scope;
+  document.getElementById("scope-note").innerHTML =
+    '<h2>'+esc(C.heading)+'</h2><p>'+C.lead+'</p><ul>'+
+    C.items.map(i => '<li>'+esc(i)+'</li>').join("")+'</ul>';
+}
+
+function renderLegend(){
+  const L = COPY.legend;
+  let h = '<section><h3>'+esc(L.categoryHeading)+'</h3>';
+  L.categories.forEach(c => {
+    h += '<div class="row"><span class="swatch '+c.cls+'"></span> '+esc(c.text)+'</div>';
+  });
+  h += '</section>';
+
+  /* Connector rows come from EDGE_KINDS, so adding a kind updates the legend. */
+  h += '<section><h3>'+esc(L.connectorHeading)+'</h3>';
+  Object.keys(EDGE_KINDS).forEach(k => {
+    const cls = k==="solid" ? "" : " "+k;
+    h += '<div class="row"><span class="edge-demo'+cls+'"></span> '+esc(EDGE_KINDS[k].legend)+'</div>';
+  });
+  h += '<div class="row"><span class="edge-demo nonga"></span> '+esc(L.nonGaNote)+'</div>';
+  h += '<div class="row" style="color:var(--accent)">'+esc(L.accentNote)+'</div>';
+  h += '</section>';
+
+  /* Status rows come from statusMeta[].legend, so a status change needs no markup edit. */
+  h += '<section><h3>'+esc(L.statusHeading)+'</h3>';
+  Object.keys(statusMeta).forEach(k => {
+    const m = statusMeta[k];
+    if (!m || !m.legend) return;
+    h += '<div class="row"><span class="badge '+m.cls+'">'+esc(m.label)+'</span> '+esc(m.legendText||"")+'</div>';
+  });
+  h += '<div class="row" style="color:var(--muted)">'+esc(L.gaNote)+'</div>';
+  h += '<div class="row" style="color:var(--muted)">'+esc(L.dashNote)+'</div>';
+  h += '</section>';
+
+  /* Licensing key. */
+  h += '<section><h3>'+esc(L.licHeading)+'</h3>';
+  /* Only key the tags actually in use, so retiring a licence tag from the data
+     never leaves an orphaned legend row behind. */
+  const tagsInUse = new Set();
+  ARCHITECTURE.nodes.forEach(n => (n.license||[]).forEach(t => tagsInUse.add(t)));
+  L.licRows.filter(r => tagsInUse.has(r.tag)).forEach(r => {
+    h += '<div class="row"><span class="lic">'+esc(r.tag)+'</span> '+esc(r.text)+'</div>';
+  });
+  h += '<div class="row" style="color:var(--muted)">'+esc(L.licNote)+'</div>';
+  h += '</section>';
+
+  document.getElementById("legend").innerHTML = h;
+}
+
+
+/* ---------------------------------------------------------------------------
+   OPTION A — fit-to-width control.
+   Fit mode is a VIEW setting only: it changes no data and no layout maths. The
+   SVG keeps its intrinsic width/height attributes and its viewBox, so setting
+   width:100% scales the whole thing proportionally. Choice is persisted, and
+   defaults to fit when the window is narrower than the diagram.
+   --------------------------------------------------------------------------- */
+const FIT_KEY = "purview-arch-fit";
+
+function diagramWidth(){
+  const svg = document.querySelector("svg.diagram");
+  return svg ? Number(svg.getAttribute("width")) || 0 : 0;
+}
+
+function updateFitButton(){
+  const btn = document.getElementById("btn-fit");
+  if (!btn) return;
+  const on = document.body.classList.contains("fit");
+  btn.setAttribute("aria-pressed", on ? "true" : "false");
+  /* Label states the action, and reports the scale so nobody mistakes a shrunken
+     view for the real type size. */
+  if (on){
+    const w = diagramWidth();
+    const avail = document.getElementById("canvas-scroll").clientWidth;
+    const pct = (w && avail) ? Math.round(100*avail/w) : 100;
+    const suffix = pct < 100 ? " (now " + pct + "%)" : "";
+    setBtnLabel(btn, "Actual size" + suffix, "100%" + (pct < 100 ? " \u00b7 " + pct + "%" : ""));
+  } else {
+    setBtnLabel(btn, "Fit to width", "Fit");
+  }
+}
+
+function applyFitMode(on, persist){
+  document.body.classList.toggle("fit", !!on);
+  if (persist){ try { localStorage.setItem(FIT_KEY, on ? "fit" : "actual"); } catch(e){} }
+  updateFitButton();
+}
+
+/* Default: fit when the diagram is wider than the space available, unless the
+   user has already made a choice. */
+function autoFit(){
+  let saved = null; try { saved = localStorage.getItem(FIT_KEY); } catch(e){}
+  if (saved === "fit" || saved === "actual"){ applyFitMode(saved === "fit", false); return; }
+  const w = diagramWidth();
+  const avail = document.getElementById("canvas-scroll").clientWidth;
+  applyFitMode(w > 0 && avail > 0 && w > avail, false);
+}
+
+/* ---------- Layer selector dropdown ---------- */
+function buildLayerSelect(){
+  const sel = document.getElementById("layer-select");
+  ARCHITECTURE.layers.forEach(l => {
+    const opt = document.createElement("option");
+    opt.value = l.id; opt.textContent = l.name;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener("change", () => isolateLayer(sel.value));
+}
+function setLayerSelect(v){ document.getElementById("layer-select").value = v; }
+
+function buildLicenseSelect(){
+  const sel = document.getElementById("license-select");
+  LICENSE_LENSES.forEach(l => {
+    const opt = document.createElement("option");
+    opt.value = l.id; opt.textContent = l.name;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener("change", () => isolateLicense(sel.value));
+}
+function setLicenseSelect(v){ document.getElementById("license-select").value = v; }
+
+/* ---------- Node wiring (click + keyboard) ---------- */
+function wireNodes(){
+  document.querySelectorAll(".node").forEach(card => {
+    const id = card.dataset.id;
+    card.addEventListener("click", ev => {
+      /* let real links inside the card work without selecting */
+      if (ev.target.closest("a")) return;
+      selectNode(id);
+    });
+    card.addEventListener("keydown", ev => {
+      if (ev.key==="Enter"){ ev.preventDefault(); selectNode(id); }
+      else if (ev.key==="Escape"){ ev.preventDefault(); resetSelection(); }
+    });
+  });
+  /* click blank canvas to reset */
+  document.querySelector("svg.diagram").addEventListener("click", ev => {
+    if (ev.target.tagName.toLowerCase()==="svg") resetSelection();
+  });
+}
+
+/* ---------- Theme (persisted) ---------- */
+const THEME_KEY = "purview-arch-theme";
+function applyTheme(t){
+  const btn = document.getElementById("btn-theme");
+  if (t==="dark"||t==="light"){ document.documentElement.setAttribute("data-theme", t); }
+  else { document.documentElement.removeAttribute("data-theme"); }
+  const isDark = t==="dark" || (t==null && matchMedia("(prefers-color-scheme: dark)").matches);
+  btn.setAttribute("aria-pressed", isDark ? "true" : "false");
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute("data-theme");
+  const sysDark = matchMedia("(prefers-color-scheme: dark)").matches;
+  const nowDark = cur ? cur==="dark" : sysDark;
+  const next = nowDark ? "light" : "dark";
+  try { localStorage.setItem(THEME_KEY, next); } catch(e){}
+  applyTheme(next);
+}
+
+/* ---------- Conditional private-preview callout ----------
+   Renders a single red "remove before external sharing" box at the end of the
+   page listing every node whose status is "private-preview". Driven entirely off
+   ARCHITECTURE: with ZERO such nodes it renders NOTHING (the container is emptied
+   and unclassed, so it has no border, padding, or margin). Add one node with that
+   status and both the red node styling (CSS on data-status) and this box appear. */
+function renderPrivCallout(){
+  const el = document.getElementById("priv-callout");
+  const priv = ARCHITECTURE.nodes.filter(n => n.status === "private-preview");
+  if (!priv.length){ el.className = ""; el.innerHTML = ""; return; }
+  let h = '<h2>'+esc(COPY.privateCallout.heading)+'</h2><ul>';
+  priv.forEach(n => h += '<li>' + esc(n.title) + '</li>');
+  h += '</ul>';
+  el.className = "priv-callout";
+  el.innerHTML = h;
+}
+
+/* ---------- Boot ---------- */
+function boot(){
+  /* theme first so measured heights use final fonts */
+  let saved = null; try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
+  applyTheme(saved);
+  /* Full detail is the default: every node shows its one-line description on first paint.
+     The button switches to overview density (titles + badges only) for a cleaner read.
+     Density must be settled BEFORE the first render so card heights measure correctly. */
+  /* Build stamp, top right \u2014 a fixed authoring date from COPY.stamp, NOT a runtime
+     clock. A viewer opening this file in 2027 must still see when it was authored. */
+  const stampEl = document.getElementById("stamp-date");
+  if (stampEl) stampEl.textContent = COPY.stamp.date;
+  const stampLabelEl = document.querySelector(".stamp-label");
+  if (stampLabelEl) stampLabelEl.textContent = COPY.stamp.label;
+
+  renderScopeNote();
+  renderLegend();
+  render();
+  autoFit();
+  buildLayerSelect();
+  buildLicenseSelect();
+  renderPrivCallout();
+  showEmptyDetail();
+
+  document.getElementById("btn-overview").addEventListener("click", fullOverview);
+  document.getElementById("btn-reset").addEventListener("click", resetSelection);
+  document.getElementById("btn-theme").addEventListener("click", () => { toggleTheme(); /* re-measure for font metric changes */ setTimeout(render, 0); });
+  document.getElementById("btn-legend").addEventListener("click", () => {
+    const lg = document.getElementById("legend");
+    const open = lg.classList.toggle("open");
+    document.getElementById("btn-legend").setAttribute("aria-pressed", open?"true":"false");
+  });
+  /* Overview by default; "Show all detail" reveals every node's one-line meta.
+     Re-render after toggling so card heights are re-measured, not guessed. */
+  document.getElementById("btn-density").addEventListener("click", () => {
+    const btn = document.getElementById("btn-density");
+    const overview = document.body.classList.toggle("overview");
+    btn.setAttribute("aria-pressed", overview?"false":"true");
+    setBtnLabel(btn, overview ? "Show all detail" : "Overview only",
+                     overview ? "Detail" : "Overview");
+    render();
+  });
+  document.getElementById("btn-fit").addEventListener("click", () => {
+    applyFitMode(!document.body.classList.contains("fit"), true);
+  });
+  document.getElementById("explain-1").addEventListener("click", () => runExplain("e1"));
+  document.getElementById("explain-2").addEventListener("click", () => runExplain("e2"));
+  document.getElementById("explain-3").addEventListener("click", () => runExplain("e3"));
+
+  /* global Esc resets */
+  document.addEventListener("keydown", ev => { if (ev.key==="Escape") resetSelection(); });
+
+  /* keep layout crisp on resize (recompute, preserving nothing fragile) */
+  let rt;
+  window.addEventListener("resize", () => {
+    clearTimeout(rt);
+    rt = setTimeout(() => { render(); updateFitButton(); }, 150);
+  });
+}
+
+if (document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
+else boot();
+</script>
+</body>
+</html>
