@@ -561,7 +561,7 @@ const COPY = {
      the architecture content was last verified against Microsoft documentation, which
      is what a reader needs to judge staleness. Update it by hand with each content
      revision; never replace it with new Date(). */
-  stamp: { label:"Content verified:", date:"29 September 2026" },
+  stamp: { label:"Content verified:", date:"2 November 2026" },
 
   /* Private-preview callout (renders only when such a node exists). */
   privateCallout: { heading:"\u26a0 Private preview content — remove before external sharing" }
@@ -611,7 +611,7 @@ const ARCHITECTURE = {
   /* Visual sub-group boxes drawn behind a set of nodes. */
   groups: [
     { id:"grp-classifiers", label:"Classifier layers", nodeIds:
-      ["declarative-classifiers","edm","named-entities","document-fingerprinting","trainable-classifiers","ai-classifiers"] },
+      ["declarative-classifiers","edm","named-entities","document-fingerprinting","trainable-classifiers"] },
     /* `cohesive` = the members are PEERS, released together, not a pipeline. Selecting
        any one highlights all of them. Deliberately opt-in per group: the classifier
        group must NOT behave this way, or selecting one engine would wrongly drag in
@@ -765,20 +765,7 @@ const ARCHITECTURE = {
         limits:"Only work with items that aren't encrypted. Custom classifiers are limited to English. A label whose only condition is a trainable classifier can't be converted into an auto-labeling policy. Whether Teams message text or email body text is evaluated is UNKNOWN.",
         status:"Generally available." } },
 
-    /* CONSTRAINT: a real detection engine, but narrowly scoped — prompts and the
-       content/files used for Copilot responses — and consumed by service-side
-       auto-labeling only. Not client-side auto-labeling, not general DLP. */
-    { id:"ai-classifiers", stage:2, col:1, cat:"service", status:"public-roadmap",
-      title:"AI classifiers (semantic)", meta:"Prompts & Copilot-grounded content",
-      scope:{ objects:["files","prompt"], excludeNodes:["client-side-auto-labeling","dlp-policy"] },
-      links:[ { text:"Roadmap ID 560708", href:"https://www.microsoft.com/microsoft-365/roadmap?id=560708" } ],
-      detail:{
-        sees:"Prompts, content within prompts, and files used to ground Microsoft 365 Copilot responses.",
-        can:"Classifies content semantically, improving on base sensitive information types. Feeds service-side auto-labeling.",
-        limits:"Available only for prompts, content in prompts, and files used for Copilot responses — and only to service-side auto-labeling. Not used by client-side auto-labeling or by general DLP policy evaluation. On the public roadmap; not generally available. Licensing: UNKNOWN — not yet publicly disclosed and subject to change.",
-        status:"PUBLIC ROADMAP — Roadmap ID 560708." } },
-
-    /* Management / experience note — sits below the five classifier engines and is
+        /* Management / experience note — sits below the five classifier engines and is
        intentionally OUTSIDE the "Classifier layers" group (cat:"note", not a blue
        service rail) to make clear it MANAGES classifiers rather than being a sixth
        detection engine. */
@@ -802,8 +789,7 @@ const ARCHITECTURE = {
         limits:"Resolves against the configured label priority order.",
         status:"Generally available." } },
 
-    /* Fed by syntactic SITs, EDM and trainable classifiers. NOT by AI classifiers or
-       document fingerprinting. */
+    /* Fed by syntactic SITs, EDM and trainable classifiers. NOT by document fingerprinting. */
     { id:"client-side-auto-labeling", primary:true, license:["E5"], stage:3, col:0, cat:"service", status:"ga",
       title:"Client-side auto-labeling", meta:"Office apps — auto-apply or recommend",
       links:[ { text:"Automatically apply a sensitivity label", href:"https://learn.microsoft.com/purview/apply-sensitivity-label-automatically" } ],
@@ -811,7 +797,7 @@ const ARCHITECTURE = {
       detail:{
         sees:"Content in Office apps as the user works.",
         can:"Auto-applies or recommends a label in Word, Excel, PowerPoint and Outlook as the user works, using syntactic SITs, EDM and trainable classifiers. Supports recommending a label — the user accepts or rejects it.",
-        limits:"Depends on the app version the user has installed. No PDF support, no simulation mode, and it can't label incoming email. EDM can't be the only condition — at least one non-EDM SIT is required, or auto-labeling is turned off for the label. Not fed by AI classifiers or document fingerprinting.",
+        limits:"Depends on the app version the user has installed. No PDF support, no simulation mode, and it can't label incoming email. EDM can't be the only condition — at least one non-EDM SIT is required, or auto-labeling is turned off for the label. Not fed by document fingerprinting.",
         status:"Generally available." } },
 
     { id:"default-library-label", primary:true, license:["E3","E5"], stage:3, col:0, cat:"service", status:"ga",
@@ -1139,16 +1125,13 @@ const ARCHITECTURE = {
     { from:"automatic-classification", to:"named-entities",           kind:"solid" },
     { from:"automatic-classification", to:"document-fingerprinting",  kind:"solid" },
     { from:"automatic-classification", to:"trainable-classifiers",    kind:"solid" },
-    { from:"automatic-classification", to:"ai-classifiers",           kind:"solid" },
     { from:"on-demand-classification", to:"declarative-classifiers",  kind:"dashed" },
     { from:"on-demand-classification", to:"edm",                      kind:"dashed" },
     { from:"on-demand-classification", to:"named-entities",           kind:"dashed" },
     { from:"on-demand-classification", to:"document-fingerprinting",  kind:"dashed" },
     { from:"on-demand-classification", to:"trainable-classifiers",    kind:"dashed" },
-    { from:"on-demand-classification", to:"ai-classifiers",           kind:"dashed" },
     /* Classification informs auto-labeling — engine by engine.
-       NOT present, by design: document fingerprinting -> any labeling method;
-       AI classifiers -> client-side auto-labeling. */
+       NOT present, by design: document fingerprinting -> any labeling method. */
     { from:"declarative-classifiers", to:"client-side-auto-labeling",  kind:"solid" },
     /* EDM feeds BOTH auto-labeling paths per Learn "Services that EDM supports". */
     { from:"edm",                     to:"client-side-auto-labeling",  kind:"solid" },
@@ -1161,7 +1144,6 @@ const ARCHITECTURE = {
     /* Learn documents a "Configuring trainable classifiers for a label" step under
        client-side auto-labeling for Office apps, so this path exists. */
     { from:"trainable-classifiers",   to:"client-side-auto-labeling",  kind:"solid" },
-    { from:"ai-classifiers",          to:"service-side-auto-labeling", kind:"solid" },
     /* FEEDBACK: on-demand classification does NOT label, but service-side auto-labeling
        then leverages the refreshed classifier results (explicit requirement). */
     { from:"on-demand-classification", to:"service-side-auto-labeling", kind:"dashed" },
@@ -1253,7 +1235,7 @@ const ARCHITECTURE = {
     { id:"label",       name:"Sensitivity label",                        nodes:["manual-label","default-label","client-side-auto-labeling","default-library-label","service-side-auto-labeling","label-applied","label-activity","label-inheritance","autolabel-scale-capacity","autolabel-scalability","autolabel-coverage-report","autolabel-library-default"] },
     { id:"encryption",  name:"Encryption / usage rights",                nodes:["encryption"] },
     { id:"sit",         name:"Sensitive information types",              nodes:["declarative-classifiers","edm","named-entities"] },
-    { id:"classifiers", name:"Classifiers (trainable / fingerprint / AI)", nodes:["declarative-classifiers","edm","named-entities","document-fingerprinting","trainable-classifiers","ai-classifiers"] },
+    { id:"classifiers", name:"Classifiers (trainable / fingerprint)", nodes:["declarative-classifiers","edm","named-entities","document-fingerprinting","trainable-classifiers"] },
     { id:"dlp",         name:"DLP policy evaluation",                    nodes:["dlp-policy","dlp-copilot","adaptive-protection"] },
     { id:"permissions", name:"Permissions / access",                    nodes:["permissions"] },
     { id:"retention",   name:"Retention (DLM)",                         nodes:["dlm-retention"] },
@@ -1284,7 +1266,7 @@ const ARCHITECTURE = {
   explains: {
     e1: {
       title:"Classification vs labels",
-      nodes:["automatic-classification","grp-classifiers","declarative-classifiers","edm","named-entities","document-fingerprinting","trainable-classifiers","ai-classifiers","dlp-policy","manual-label","default-label","client-side-auto-labeling","default-library-label","service-side-auto-labeling","label-applied","label-activity","encryption","label-inheritance","permissions","dlm-retention","audit-log","activity-content-explorer"],
+      nodes:["automatic-classification","grp-classifiers","declarative-classifiers","edm","named-entities","document-fingerprinting","trainable-classifiers","dlp-policy","manual-label","default-label","client-side-auto-labeling","default-library-label","service-side-auto-labeling","label-applied","label-activity","encryption","label-inheritance","permissions","dlm-retention","audit-log","activity-content-explorer"],
       flows:["classification","label"],
       detail:{
         sees:"Classification (detection) runs on the automatic trigger, invisibly, on every object.",
@@ -1294,7 +1276,7 @@ const ARCHITECTURE = {
     },
     e2: {
       title:"When is information classified?",
-      nodes:["automatic-classification","on-demand-classification","grp-classifiers","declarative-classifiers","edm","named-entities","document-fingerprinting","trainable-classifiers","ai-classifiers"],
+      nodes:["automatic-classification","on-demand-classification","grp-classifiers","declarative-classifiers","edm","named-entities","document-fingerprinting","trainable-classifiers"],
       flows:[],
       detail:{
         sees:"Two triggers determine WHEN classification happens.",
@@ -1304,7 +1286,7 @@ const ARCHITECTURE = {
     },
     e3: {
       title:"How is information protected?",
-      nodes:["grp-classifiers","declarative-classifiers","edm","named-entities","document-fingerprinting","trainable-classifiers","ai-classifiers","dlp-policy","dlp-copilot","manual-label","default-label","service-side-auto-labeling","encryption","label-inheritance","permissions","dlm-retention"],
+      nodes:["grp-classifiers","declarative-classifiers","edm","named-entities","document-fingerprinting","trainable-classifiers","dlp-policy","dlp-copilot","manual-label","default-label","service-side-auto-labeling","encryption","label-inheritance","permissions","dlm-retention"],
       flows:["classification","label"],
       detail:{
         sees:"Two enforcement routes, and they compound.",
